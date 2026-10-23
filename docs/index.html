@@ -1,0 +1,3767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Card Games for Jahangir Kabir</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Card Games">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: a single felt card table under a fixed control rail; every card and gap is sized in JS from the space available. */
+:root {
+  --felt: #15583e;
+  --felt-hi: #1d6c4c;
+  --felt-lo: #0e4430;
+  --rail: #0a2b1f;
+  --ink: #fbf7ec;
+  --ink-dim: #c9e0d2;
+  --card: #fffdf6;
+  --card-edge: #a9a18c;
+  --black: #16161a;
+  --red: #c4122e;
+  --blue: #1450b8;
+  --green: #0b7a35;
+  --gold: #ffcf3f;
+  --gold-ink: #3b2a00;
+  --hint: #63d6ff;
+  --btn: #fbf7ec;
+  --btn-ink: #0b3a28;
+  --shade: rgba(0, 0, 0, 0.62);
+  --back: #1b4f8f;
+  --back-2: #2a64ad;
+  --font: "Atkinson Hyperlegible", -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color-scheme: dark;
+}
+
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--felt);
+  background: radial-gradient(ellipse at 50% 40%, var(--felt-hi) 0%, var(--felt) 55%, var(--felt-lo) 100%);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 22px;
+  overflow: hidden;
+  -webkit-text-size-adjust: 100%;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+  touch-action: manipulation;
+}
+button { font-family: var(--font); touch-action: manipulation; -webkit-appearance: none; cursor: pointer; }
+button:focus { outline: none; }
+button:focus-visible { outline: 4px solid var(--gold); outline-offset: 3px; }
+
+#app { position: relative; height: 100%; }
+.screen { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
+
+/* ---------- Menu ---------- */
+#menu { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.mwrap {
+  max-width: 1100px; margin: 0 auto;
+  padding-left: 16px; padding-right: 16px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-top: 22px; padding-bottom: 40px;
+}
+.mhead { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: space-between; justify-content: space-between; margin-bottom: 8px; }
+.mhead > div { min-width: 0; padding-right: 16px; }
+.eyebrow { font-size: 20px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); font-weight: 700; }
+.mhead h1 { margin: 2px 0 0; font-size: 50px; line-height: 1.05; font-weight: 700; letter-spacing: -0.01em; }
+.msec { font-size: 26px; font-weight: 700; color: var(--ink-dim); margin: 26px 0 12px; }
+.tiles { display: -webkit-box; display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; margin: 0 -8px; }
+.tile {
+  display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center;
+  width: calc(50% - 16px); margin: 8px; box-sizing: border-box; min-height: 150px;
+  text-align: left; padding: 18px 20px; border: 0; border-radius: 20px;
+  background: var(--card); color: var(--black);
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.35);
+}
+.tile:active { -webkit-transform: translateY(3px); transform: translateY(3px); box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35); }
+.temb { position: relative; width: 128px; height: 106px; -webkit-flex: none; flex: none; margin-right: 18px; }
+.ttxt { -webkit-flex: 1; flex: 1; min-width: 0; }
+.tname { font-size: 30px; font-weight: 700; line-height: 1.1; }
+.tdesc { font-size: 20px; line-height: 1.3; margin-top: 6px; color: #3d4a43; }
+.tmeta { display: inline-block; margin-top: 8px; font-size: 18px; font-weight: 700; background: var(--gold); color: var(--gold-ink); border-radius: 8px; padding: 3px 10px; }
+@media (max-width: 720px) { .tile { width: calc(100% - 16px); } .mhead h1 { font-size: 44px; } }
+
+/* ---------- Game chrome ---------- */
+#game { display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; }
+#hdr {
+  -webkit-flex: none; flex: none; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center;
+  height: 78px; background: var(--rail);
+  padding-left: 16px; padding-right: 16px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.hbtn {
+  -webkit-flex: none; flex: none; font-size: 23px; font-weight: 700; height: 60px; padding: 0 20px;
+  border-radius: 14px; border: 0; background: var(--btn); color: var(--btn-ink); margin-left: 10px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.45); white-space: nowrap;
+}
+.hbtn:first-child { margin-left: 0; }
+.hbtn:active { -webkit-transform: translateY(2px); transform: translateY(2px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.45); }
+.hbtn[disabled] { opacity: 0.4; }
+.hbtn svg { width: 22px; height: 22px; vertical-align: -3px; margin-right: 6px; fill: currentColor; }
+#htitle { -webkit-flex: 1; flex: 1; min-width: 0; text-align: center; font-size: 28px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 12px; }
+#hbtns { display: -webkit-flex; display: flex; -webkit-flex: none; flex: none; }
+#status {
+  -webkit-flex: none; flex: none; min-height: 62px; box-sizing: border-box; display: -webkit-flex; display: flex;
+  -webkit-align-items: center; align-items: center; background: rgba(0, 0, 0, 0.28);
+  font-size: 24px; font-weight: 700; line-height: 1.2;
+  padding: 6px 16px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+#stl { -webkit-flex: 1; flex: 1; min-width: 0; }
+#str { -webkit-flex: none; flex: none; display: -webkit-flex; display: flex; }
+#str .bigbtn { margin-left: 10px; min-height: 52px; font-size: 22px; padding: 0 18px; }
+#board {
+  -webkit-flex: 1; flex: 1; position: relative; min-height: 0;
+  padding: 10px 16px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+#stage { position: relative; width: 100%; height: 100%; cursor: pointer; } /* iOS only sends taps on plain areas that look clickable */
+
+/* ---------- Cards ---------- */
+.card {
+  position: absolute; width: var(--cw, 100px); height: calc(var(--cw, 100px) * 1.4);
+  box-sizing: border-box; border-radius: calc(var(--cw, 100px) * 0.09);
+  background: var(--card); border: 1px solid var(--card-edge);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  color: var(--black); overflow: hidden; cursor: pointer;
+  font-family: var(--font);
+}
+.card * , .slot *, .tilem * { pointer-events: none; }
+.ct { white-space: nowrap; font-weight: 700; color: var(--black); background: var(--card); border-radius: 6px; padding: 0 5px; }
+.card.s-h, .card.s-d, .ct.s-h, .ct.s-d { color: var(--red); }
+.card.s-j, .ct.s-j { color: #6b2bb0; }
+.fourc .card.s-d, .fourc .ct.s-d { color: var(--blue); }
+.fourc .card.s-c, .fourc .ct.s-c { color: var(--green); }
+.card svg, .si, .ct svg { fill: currentColor; }
+.card .ix {
+  position: absolute; left: calc(var(--cw, 100px) * 0.05); top: calc(var(--cw, 100px) * 0.025);
+  white-space: nowrap; line-height: 1;
+}
+.card .rk { display: inline-block; vertical-align: top; font-size: calc(var(--cw, 100px) * 0.37); font-weight: 700; letter-spacing: -0.03em; }
+.card .rk.ten { letter-spacing: -0.11em; margin-left: -0.04em; }
+.card .ix svg { display: inline-block; vertical-align: top; width: calc(var(--cw, 100px) * 0.27); height: calc(var(--cw, 100px) * 0.27); margin-top: calc(var(--cw, 100px) * 0.05); margin-left: calc(var(--cw, 100px) * 0.025); }
+.card .ix .jks { width: calc(var(--cw, 100px) * 0.36); height: calc(var(--cw, 100px) * 0.36); margin: 0; }
+.card .ctr { position: absolute; left: 16%; right: 16%; top: 36%; bottom: 7%; text-align: center; }
+.card .ctr svg { width: 100%; height: 100%; }
+.card .ctr.fc { left: 14%; right: 14%; top: 38%; bottom: 7%; border: 2px solid currentColor; border-radius: calc(var(--cw, 100px) * 0.06); opacity: 0.95; }
+.card .ctr.fc span { display: block; font-size: calc(var(--cw, 100px) * 0.5); font-weight: 700; line-height: calc(var(--cw, 100px) * 0.6); }
+.card .ctr.fc svg { display: block; width: 40%; height: calc(var(--cw, 100px) * 0.22); margin: 0 auto; }
+.card .ctr.jk { top: 40%; }
+.card .ctr.jk svg { height: 62%; }
+.card .ctr.jk span { display: block; font-size: calc(var(--cw, 100px) * 0.16); font-weight: 700; letter-spacing: 0.06em; }
+.card.back {
+  border: 3px solid var(--card);
+  background-color: var(--back);
+  background-image: repeating-linear-gradient(45deg, var(--back) 0, var(--back) 7px, var(--back-2) 7px, var(--back-2) 9px),
+                    repeating-linear-gradient(-45deg, transparent 0, transparent 7px, rgba(255,255,255,0.12) 7px, rgba(255,255,255,0.12) 9px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+}
+.card .cnt { position: absolute; left: 0; right: 0; top: 50%; margin-top: -0.6em; text-align: center; font-size: calc(var(--cw, 100px) * 0.34); font-weight: 700; color: #fff; text-shadow: 0 2px 3px rgba(0,0,0,0.7); line-height: 1.2; }
+.card.sel { box-shadow: 0 0 0 5px var(--gold), 0 0 16px 6px rgba(255, 207, 63, 0.75); border-color: var(--gold); }
+.card.hint { box-shadow: 0 0 0 5px var(--hint), 0 0 16px 6px rgba(99, 214, 255, 0.75); }
+.card.win { box-shadow: 0 0 0 6px var(--gold), 0 0 22px 8px rgba(255, 207, 63, 0.9); }
+.card.dim::after, .card.dimlite::after { content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(10, 30, 20, 0.5); }
+.card.dimlite::after { background: rgba(10, 30, 20, 0.26); }
+.card.inl { position: relative; display: inline-block; vertical-align: top; }
+.card.new { box-shadow: 0 0 0 4px var(--hint), 0 0 12px 3px rgba(99, 214, 255, 0.6); }
+.card.new.sel { box-shadow: 0 0 0 5px var(--gold), 0 0 16px 6px rgba(255, 207, 63, 0.75); }
+.card.new::before { content: "NEW"; position: absolute; left: 6%; top: 34%; font-size: calc(var(--cw, 100px) * 0.15); font-weight: 700; background: var(--gold); color: var(--gold-ink); border-radius: 4px; padding: 1px 4px; z-index: 2; }
+
+.slot {
+  position: absolute; width: var(--cw, 100px); height: calc(var(--cw, 100px) * 1.4); box-sizing: border-box;
+  border: 3px dashed rgba(255, 255, 255, 0.4); border-radius: calc(var(--cw, 100px) * 0.09);
+  background: rgba(0, 0, 0, 0.12); cursor: pointer;
+  display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: center; justify-content: center;
+  text-align: center; color: rgba(255, 255, 255, 0.6); font-weight: 700; font-size: calc(var(--cw, 100px) * 0.3); line-height: 1.1;
+}
+.slot small { display: block; font-size: 0.5em; }
+.slot.hint { border-color: var(--hint); border-style: solid; background: rgba(99, 214, 255, 0.2); }
+.slot.sel { border-color: var(--gold); border-style: solid; }
+
+/* ---------- Text, labels, buttons on the table ---------- */
+.ct svg { width: 0.8em; height: 0.8em; vertical-align: -0.05em; margin-left: 1px; }
+.si { width: 0.85em; height: 0.85em; vertical-align: -0.08em; }
+.lbl {
+  position: absolute; box-sizing: border-box; background: rgba(0, 0, 0, 0.35); border: 3px solid transparent;
+  border-radius: 16px; padding: 8px 14px; text-align: center; font-size: 22px; line-height: 1.25;
+}
+.lbl b { display: block; font-size: 26px; }
+.lbl.turn { border-color: var(--gold); background: rgba(0, 0, 0, 0.5); }
+.lbl.turn b { color: var(--gold); }
+.note { position: absolute; text-align: center; font-size: 24px; font-weight: 700; line-height: 1.3; }
+.bigbtn {
+  font-size: 26px; font-weight: 700; min-height: 68px; padding: 0 28px; border-radius: 16px; border: 0;
+  background: var(--btn); color: var(--btn-ink); box-shadow: 0 4px 0 rgba(0, 0, 0, 0.4); white-space: nowrap;
+}
+.bigbtn.primary { background: var(--gold); color: var(--gold-ink); }
+.bigbtn:active { -webkit-transform: translateY(3px); transform: translateY(3px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.4); }
+.bigbtn[disabled] { opacity: 0.35; }
+.bigbtn.abs { position: absolute; }
+.panel { position: absolute; text-align: center; }
+.panel h3 { margin: 0 0 12px; font-size: 28px; }
+.panel .bigbtn { margin: 6px; }
+.bidgrid { display: inline-block; }
+.bidgrid .bigbtn { width: 76px; padding: 0; margin: 5px; }
+.bidgrid .bigbtn.wide { width: 130px; }
+.suitbtn { width: 150px; height: 120px; padding: 0; margin: 8px; font-size: 22px; background: var(--card); }
+.suitbtn svg { display: block; width: 58px; height: 58px; margin: 0 auto 4px; fill: currentColor; }
+.suitbtn.s-s, .suitbtn.s-c { color: var(--black); }
+.suitbtn.s-h, .suitbtn.s-d { color: var(--red); }
+.fourc .suitbtn.s-d { color: var(--blue); }
+.fourc .suitbtn.s-c { color: var(--green); }
+
+/* Canasta meld tiles */
+.tilem {
+  position: absolute; box-sizing: border-box; border-radius: 12px; background: var(--card); color: var(--black);
+  border: 3px solid var(--card-edge); text-align: center; cursor: pointer; overflow: hidden;
+}
+.tilem .tr { display: block; font-weight: 700; line-height: 1; }
+.tilem .tc { display: block; font-weight: 700; line-height: 1.1; }
+.tilem .tw { display: block; line-height: 1.1; }
+.tilem.nat { background: #b3122b; color: #fff; border-color: var(--gold); }
+.tilem.mix { background: #1d1d22; color: #fff; border-color: var(--gold); }
+.tilem.sel { box-shadow: 0 0 0 5px var(--gold); }
+.tilem.r3 { background: #fbe3e6; color: var(--red); }
+
+/* ---------- Dialog ---------- */
+#dlg {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 50; background: var(--shade);
+  display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: center; justify-content: center;
+  padding: 16px; box-sizing: border-box;
+}
+.dbox {
+  background: var(--card); color: var(--black); border-radius: 22px; width: 100%; max-width: 760px; max-height: 100%;
+  box-sizing: border-box; display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+.dbox h2 { margin: 0; padding: 24px 28px 4px; font-size: 36px; line-height: 1.15; }
+.dbody { padding: 10px 28px; font-size: 24px; line-height: 1.45; overflow-y: auto; -webkit-overflow-scrolling: touch; min-height: 0; -webkit-flex: 1 1 auto; flex: 1 1 auto; }
+.dbody p { margin: 0 0 14px; }
+.dbody h4 { font-size: 26px; margin: 18px 0 6px; }
+.dbody ul { margin: 0 0 14px; padding-left: 28px; }
+.dbody li { margin-bottom: 8px; }
+.dbtns { padding: 12px 22px 24px; display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; -webkit-justify-content: flex-end; justify-content: flex-end; }
+.dbtns .bigbtn { margin: 6px; background: #e6e0cf; -webkit-flex: 1 1 auto; flex: 1 1 auto; }
+.dbtns .bigbtn.primary { background: var(--gold); }
+.dbody .bigbtn { background: #e6e0cf; }
+.dbody .ct { background: transparent; padding: 0; }
+.seg { display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; margin: 4px -5px 18px; }
+.seg .bigbtn { -webkit-flex: 1 1 auto; flex: 1 1 auto; margin: 5px; font-size: 24px; min-height: 64px; }
+.seg .bigbtn.on { background: var(--gold); box-shadow: 0 0 0 3px var(--gold-ink) inset, 0 4px 0 rgba(0,0,0,0.4); }
+table.sc { width: 100%; border-collapse: collapse; font-size: 24px; margin: 6px 0 14px; }
+table.sc th, table.sc td { padding: 8px 10px; text-align: right; border-bottom: 2px solid #e2dccb; font-variant-numeric: tabular-nums; }
+table.sc th:first-child, table.sc td:first-child { text-align: left; }
+table.sc tr.tot td { font-weight: 700; border-bottom: 0; font-size: 26px; }
+.hands { margin: 6px 0 14px; white-space: normal; }
+.hands .grp { display: inline-block; margin: 0 14px 10px 0; padding: 6px 6px 6px 6px; border-radius: 10px; background: #ebe5d3; vertical-align: top; }
+.hands .grp.dead { background: #f6d5d0; }
+
+/* ---------- Toast ---------- */
+#toast {
+  position: fixed; left: 50%; top: 82px; z-index: 60; -webkit-transform: translateX(-50%); transform: translateX(-50%);
+  max-width: 86%; background: rgba(8, 18, 13, 0.94); color: var(--ink); border: 3px solid var(--gold);
+  font-size: 25px; font-weight: 700; line-height: 1.3; padding: 16px 26px; border-radius: 16px; text-align: center;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5); pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile:active, .hbtn:active, .bigbtn:active { -webkit-transform: none; transform: none; }
+}
+
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true" focusable="false"><defs>
+<symbol id="s-h" viewBox="0 0 100 100"><path d="M50 92C22 68 3 51 3 30 3 14 15 5 28 5c11 0 18 7 22 15 4-8 11-15 22-15 13 0 25 9 25 25 0 21-19 38-47 62z"/></symbol>
+<symbol id="s-d" viewBox="0 0 100 100"><path d="M50 3l36 47-36 47-36-47z"/></symbol>
+<symbol id="s-s" viewBox="0 0 100 100"><path d="M50 3c8 16 46 36 46 59 0 15-11 24-24 24-9 0-16-5-19-11 1 11 5 18 13 23H34c8-5 12-12 13-23-3 6-10 11-19 11C15 86 4 77 4 62 4 39 42 19 50 3z"/></symbol>
+<symbol id="s-c" viewBox="0 0 100 100"><circle cx="50" cy="28" r="22"/><circle cx="26" cy="59" r="22"/><circle cx="74" cy="59" r="22"/><path d="M45 48h10c1 26 5 40 14 49H31c9-9 13-23 14-49z"/></symbol>
+<symbol id="s-j" viewBox="0 0 100 100"><path d="M50 4l11 33 35 1-28 21 10 34-28-20-28 20 10-34L4 38l35-1z"/></symbol>
+</defs></svg>
+<div id="app">
+  <div id="menu" class="screen" hidden></div>
+  <div id="game" class="screen" hidden>
+    <div id="hdr"><button class="hbtn" id="hmenu" data-act="menu">Menu</button><div id="htitle"></div><div id="hbtns"></div></div>
+    <div id="status"><div id="stl"></div><div id="str"></div></div>
+    <div id="board"><div id="stage"></div></div>
+  </div>
+  <div id="dlg" hidden></div>
+  <div id="toast" hidden></div>
+</div>
+<script>
+/* Card Room core: cards, screens, dialogs, settings, storage, timers. Written for Safari 12 (no ?. or ??). */
+(function () {
+  'use strict';
+  var CG = (window.CG = {});
+
+  CG.RANKS = ['', 'A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+  CG.RANK_NAMES = ['', 'Ace', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Jack', 'Queen', 'King'];
+  CG.SUIT_NAMES = { s: 'Spades', h: 'Hearts', d: 'Diamonds', c: 'Clubs', j: 'Jokers' };
+  CG.SUIT_ONE = { s: 'Spade', h: 'Heart', d: 'Diamond', c: 'Club', j: 'Joker' };
+
+  CG.red = function (c) { return c.s === 'h' || c.s === 'd'; };
+  CG.hi = function (c) { return c.r === 1 ? 14 : c.r; }; // ace high value
+
+  CG.deck = function (decks, jokers, suits) {
+    var out = [], ss = suits || ['s', 'h', 'd', 'c'];
+    for (var d = 0; d < (decks || 1); d++)
+      for (var i = 0; i < ss.length; i++)
+        for (var r = 1; r <= 13; r++) out.push({ id: out.length, r: r, s: ss[i] });
+    for (var j = 0; j < (jokers || 0); j++) out.push({ id: out.length, r: 0, s: 'j' });
+    return out;
+  };
+  CG.shuffle = function (a) {
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  };
+  CG.clone = function (o) { return JSON.parse(JSON.stringify(o)); };
+  CG.byId = function (arr, id) {
+    for (var i = 0; i < arr.length; i++) if (arr[i].id === id) return i;
+    return -1;
+  };
+
+  /* ---------- Card HTML ---------- */
+  CG.suitSvg = function (s, cls) {
+    return '<svg class="' + (cls || 'si') + '"><use xlink:href="#s-' + s + '"></use></svg>';
+  };
+  CG.cardText = function (c) {
+    if (c.s === 'j') return '<b class="ct s-j">Joker</b>';
+    return '<b class="ct s-' + c.s + '">' + CG.RANKS[c.r] + CG.suitSvg(c.s, '') + '</b>';
+  };
+  CG.cardName = function (c) {
+    return c.s === 'j' ? 'Joker' : CG.RANK_NAMES[c.r] + ' of ' + CG.SUIT_NAMES[c.s];
+  };
+  function inner(c) {
+    if (c.s === 'j')
+      return '<div class="ix">' + CG.suitSvg('j', 'jks') + '</div><div class="ctr jk">' + CG.suitSvg('j', '') + '<span>JOKER</span></div>';
+    var rk = CG.RANKS[c.r];
+    var h = '<div class="ix"><span class="rk' + (c.r === 10 ? ' ten' : '') + '">' + rk + '</span>' + CG.suitSvg(c.s, '') + '</div>';
+    if (c.r >= 11) h += '<div class="ctr fc"><span>' + rk + '</span>' + CG.suitSvg(c.s, '') + '</div>';
+    else h += '<div class="ctr">' + CG.suitSvg(c.s, '') + '</div>';
+    return h;
+  }
+  function attrs(o) {
+    var a = '';
+    if (o.act) a += ' data-act="' + o.act + '"';
+    if (o.data) for (var k in o.data) a += ' data-' + k + '="' + o.data[k] + '"';
+    return a;
+  }
+  /* c: card or null (face down). o: {act,data,sel,dim,hint,cls,z,w,down,inline,label} */
+  CG.card = function (c, x, y, o) {
+    o = o || {};
+    var cls = 'card', style = '', body = '';
+    if (!o.inline) style += 'left:' + Math.round(x) + 'px;top:' + Math.round(y) + 'px;';
+    else cls += ' inl';
+    if (o.z != null) style += 'z-index:' + o.z + ';';
+    if (o.w) style += '--cw:' + Math.round(o.w) + 'px;';
+    if (o.style) style += o.style;
+    if (!c || o.down || c.up === false) {
+      cls += ' back';
+      if (o.label != null) body = '<div class="cnt">' + o.label + '</div>';
+    } else {
+      cls += ' s-' + c.s;
+      body = inner(c);
+    }
+    if (o.sel) cls += ' sel';
+    if (o.dim) cls += ' dim';
+    if (o.hint) cls += ' hint';
+    if (o.cls) cls += ' ' + o.cls;
+    return '<div class="' + cls + '" style="' + style + '"' + attrs(o) + '>' + body + '</div>';
+  };
+  CG.slot = function (x, y, label, o) {
+    o = o || {};
+    var cls = 'slot' + (o.hint ? ' hint' : '') + (o.sel ? ' sel' : '') + (o.cls ? ' ' + o.cls : '');
+    var style = 'left:' + Math.round(x) + 'px;top:' + Math.round(y) + 'px;' + (o.w ? '--cw:' + Math.round(o.w) + 'px;' : '');
+    return '<div class="' + cls + '" style="' + style + '"' + attrs(o) + '><span>' + (label || '') + '</span></div>';
+  };
+  CG.inlineCards = function (cards, w) {
+    var h = '';
+    for (var i = 0; i < cards.length; i++)
+      h += CG.card(cards[i], 0, 0, { inline: true, w: w || 56, style: i ? 'margin-left:' + Math.round(-(w || 56) * 0.42) + 'px' : '' });
+    return h;
+  };
+
+  /* Vertical offsets for a stacked column. Shrinks gaps when the column would not fit. */
+  CG.stackYs = function (cards, cw, avail, o) {
+    o = o || {};
+    var downF = o.down || 0.17, upF = o.up || 0.42, minUp = o.minUp || 0.2, minDown = o.minDown || 0.07;
+    var n = cards.length, ch = cw * 1.4, ys = [];
+    if (!n) return ys;
+    var nDown = 0, nUp = 0, i;
+    for (i = 0; i < n - 1; i++) { if (cards[i].up === false) nDown++; else nUp++; }
+    var down = downF * cw, up = upF * cw;
+    if (ch + nDown * down + nUp * up > avail) {
+      if (nUp) up = Math.max(minUp * cw, (avail - ch - nDown * down) / nUp);
+      if (ch + nDown * down + nUp * up > avail && nDown) down = Math.max(minDown * cw, (avail - ch - nUp * up) / nDown);
+    }
+    var y = 0;
+    for (i = 0; i < n; i++) { ys.push(y); y += cards[i].up === false ? down : up; }
+    return ys;
+  };
+  /* How tall a column wants to be (in card widths) at normal spacing. */
+  CG.stackFactor = function (cards, o) {
+    o = o || {};
+    var downF = o.down || 0.17, upF = o.up || 0.42, f = 1.4;
+    for (var i = 0; i < cards.length - 1; i++) f += cards[i].up === false ? downF : upF;
+    return f;
+  };
+
+  /* ---------- Storage ---------- */
+  var PREFIX = 'cardroom1_';
+  CG.store = {
+    get: function (k, d) {
+      try {
+        var v = window.localStorage.getItem(PREFIX + k);
+        return v == null ? d : JSON.parse(v);
+      } catch (e) { return d; }
+    },
+    set: function (k, v) {
+      try { window.localStorage.setItem(PREFIX + k, JSON.stringify(v)); } catch (e) { /* storage unavailable */ }
+    },
+    del: function (k) {
+      try { window.localStorage.removeItem(PREFIX + k); } catch (e) { /* ignore */ }
+    }
+  };
+
+  /* ---------- Settings ---------- */
+  var SPEED = { slow: 1.7, normal: 1, fast: 0.45 };
+  CG.settings = { fourColor: false, speed: 'normal', oneTap: false };
+  function loadSettings() {
+    var s = CG.store.get('settings', null);
+    if (s) for (var k in CG.settings) if (s[k] != null) CG.settings[k] = s[k];
+  }
+  function applySettings() {
+    var b = document.body;
+    if (CG.settings.fourColor) b.className = (b.className.replace(/\bfourc\b/g, '') + ' fourc').trim();
+    else b.className = b.className.replace(/\bfourc\b/g, '').trim();
+  }
+  CG.wait = function (ms) {
+    if (CG.testFast) return 1;
+    return Math.round(ms * (SPEED[CG.settings.speed] || 1));
+  };
+
+  /* ---------- Timers (cleared when leaving a game) ---------- */
+  var timers = [];
+  CG.later = function (fn, ms) {
+    var id = setTimeout(function () {
+      timers = timers.filter(function (t) { return t !== id; });
+      try { fn(); } catch (err) { CG.reportError(err); }
+    }, ms);
+    timers.push(id);
+    return id;
+  };
+  CG.clearTimers = function () {
+    timers.forEach(function (t) { clearTimeout(t); });
+    timers = [];
+  };
+  CG.reportError = function (err) {
+    if (window.console) console.error(err);
+    CG.errors = (CG.errors || 0) + 1;
+  };
+
+  /* ---------- Shell ---------- */
+  var els = {};
+  CG.games = {};
+  CG.order = [];
+  CG.cur = null;
+  CG.register = function (g) { CG.games[g.id] = g; CG.order.push(g.id); };
+  function $(id) { return document.getElementById(id); }
+
+  CG.W = function () { return els.stage.clientWidth; };
+  CG.H = function () { return els.stage.clientHeight; };
+  CG.paint = function (html) { els.stage.innerHTML = html; };
+  CG.status = function (left, right) {
+    els.stl.innerHTML = left || '';
+    els.str.innerHTML = right || '';
+  };
+  CG.save = function (g) {
+    g = g || CG.cur;
+    if (g && g.S) CG.store.set('state_' + g.id, g.S);
+  };
+  CG.addWin = function (id) {
+    var st = CG.store.get('wins', {});
+    st[id] = (st[id] || 0) + 1;
+    CG.store.set('wins', st);
+  };
+
+  var BACK = '<svg viewBox="0 0 24 24"><path d="M15.5 3.5 7 12l8.5 8.5 2.1-2.1L11.2 12l6.4-6.4z"/></svg>';
+
+  CG.showMenu = function () {
+    CG.clearTimers();
+    CG.hideToast();
+    CG.closeDialog();
+    CG.cur = null;
+    CG.store.set('screen', null);
+    els.game.hidden = true;
+    els.menu.hidden = false;
+    var wins = CG.store.get('wins', {});
+    var groups = [
+      { key: 'solo', title: 'Solitaire: play on your own' },
+      { key: 'vs', title: 'Play against the computer' }
+    ];
+    var h = '<div class="mwrap"><div class="mhead"><div><div class="eyebrow">Large print card room</div><h1>Card Games for Jahangir Kabir</h1></div>' +
+      '<button class="hbtn" data-act="settings">Settings</button></div>';
+    groups.forEach(function (gr) {
+      h += '<div class="msec">' + gr.title + '</div><div class="tiles">';
+      CG.order.forEach(function (id) {
+        var g = CG.games[id];
+        if (g.group !== gr.key) return;
+        var saved = g.S || CG.store.get('state_' + id, null);
+        var meta = '';
+        if (saved && g.menuMeta) meta = '<span class="tmeta">' + g.menuMeta(saved) + '</span>';
+        else if (saved && !saved.over) meta = '<span class="tmeta">Game in progress</span>';
+        else if (wins[id]) meta = '<span class="tmeta">Wins: ' + wins[id] + '</span>';
+        var emb = '';
+        (g.emblem || []).forEach(function (c, i) {
+          emb += CG.card(c, i * 30, i * 8, { w: 62, z: i + 1 });
+        });
+        h += '<button class="tile" data-act="open" data-g="' + id + '"><div class="temb">' + emb + '</div><div class="ttxt"><div class="tname">' +
+          g.name + '</div><div class="tdesc">' + g.blurb + '</div>' + meta + '</div></button>';
+      });
+      h += '</div>';
+    });
+    h += '</div>';
+    els.menu.innerHTML = h;
+    els.menu.scrollTop = 0;
+  };
+
+  CG.open = function (id) {
+    var g = CG.games[id];
+    if (!g) return CG.showMenu();
+    CG.clearTimers();
+    CG.hideToast();
+    CG.closeDialog();
+    CG.cur = g;
+    els.menu.hidden = true;
+    els.game.hidden = false;
+    els.title.textContent = g.short || g.name;
+    var hb = '';
+    (g.tools || []).forEach(function (t) {
+      hb += '<button class="hbtn" data-act="' + t.act + '">' + t.label + '</button>';
+    });
+    hb += '<button class="hbtn" data-act="new">New game</button><button class="hbtn" data-act="rules">Rules</button>';
+    els.hbtns.innerHTML = hb;
+    CG.status('', '');
+    CG.paint('');
+    CG.store.set('screen', id);
+    if (!g.S) g.S = CG.store.get('state_' + id, null);
+    if (g.S && !g.S.over) {
+      try { g.resume(); return; } catch (err) { CG.reportError(err); g.S = null; }
+    }
+    g.newGame(true);
+  };
+
+  CG.showRules = function () {
+    var g = CG.cur;
+    if (!g) return;
+    CG.dialog({ title: 'How to play ' + g.name, body: g.rules, buttons: [{ label: 'Back to the game', primary: true }] });
+  };
+
+  function settingsBody() {
+    var s = CG.settings;
+    function seg(k, opts) {
+      var h = '<div class="seg">';
+      opts.forEach(function (o) {
+        h += '<button class="bigbtn' + (String(s[k]) === String(o[0]) ? ' on' : '') + '" data-act="set" data-k="' + k + '" data-v="' + o[0] + '">' + o[1] + '</button>';
+      });
+      return h + '</div>';
+    }
+    return '<h4>Card colors</h4>' + seg('fourColor', [['false', 'Red and black'], ['true', 'Four colors']]) +
+      '<p style="font-size:20px;margin-top:-10px">Four colors makes Diamonds blue and Clubs green, so every suit looks different.</p>' +
+      '<h4>Computer speed</h4>' + seg('speed', [['slow', 'Slow'], ['normal', 'Normal'], ['fast', 'Fast']]) +
+      '<h4>Playing a card from your hand</h4>' + seg('oneTap', [['false', 'Tap twice (safer)'], ['true', 'Tap once']]);
+  }
+  CG.showSettings = function () {
+    CG.dialog({ title: 'Settings', body: settingsBody(), buttons: [{ label: 'Done', primary: true }] });
+  };
+  function changeSetting(k, v) {
+    if (k === 'speed') CG.settings.speed = v;
+    else CG.settings[k] = v === 'true';
+    CG.store.set('settings', CG.settings);
+    applySettings();
+    var body = els.dlg.querySelector('.dbody');
+    if (body) body.innerHTML = settingsBody();
+  }
+
+  /* ---------- Dialog & toast ---------- */
+  var dlgButtons = [];
+  CG.dialog = function (o) {
+    dlgButtons = o.buttons || [{ label: 'OK', primary: true }];
+    var h = '<div class="dbox' + (o.cls ? ' ' + o.cls : '') + '">' + (o.title ? '<h2>' + o.title + '</h2>' : '') +
+      '<div class="dbody scroll">' + (o.body || '') + '</div><div class="dbtns">';
+    dlgButtons.forEach(function (b, i) {
+      h += '<button class="bigbtn' + (b.primary ? ' primary' : '') + '" data-act="dlg" data-i="' + i + '">' + b.label + '</button>';
+    });
+    h += '</div></div>';
+    els.dlg.innerHTML = h;
+    els.dlg.hidden = false;
+  };
+  CG.closeDialog = function () {
+    els.dlg.hidden = true;
+    els.dlg.innerHTML = '';
+    dlgButtons = [];
+  };
+  CG.dialogOpen = function () { return !els.dlg.hidden; };
+  var toastTimer = null;
+  CG.toast = function (msg, ms) {
+    els.toast.innerHTML = msg;
+    els.toast.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { els.toast.hidden = true; }, ms || 2600);
+  };
+  CG.hideToast = function () { clearTimeout(toastTimer); els.toast.hidden = true; };
+
+  /* Confirm before throwing away a game in progress. */
+  CG.confirmNew = function (g, start, extra) {
+    var btns = (extra || []).slice();
+    if (!btns.length) btns.push({ label: 'Start a new game', primary: true, fn: start });
+    if (g.S && !g.S.over) btns.push({ label: 'Keep playing' });
+    CG.dialog({ title: 'New game?', body: g.S && !g.S.over ? '<p>Your current game will end.</p>' : '', buttons: btns });
+  };
+
+  /* ---------- Input ---------- */
+  function onClick(e) {
+    var t = e.target;
+    var el = t && t.closest ? t.closest('[data-act]') : null;
+    if (!el) {
+      if (CG.cur && els.board.contains(t) && CG.cur.bgTap && !CG.dialogOpen()) CG.cur.bgTap();
+      return;
+    }
+    if (el.disabled) return;
+    var act = el.getAttribute('data-act');
+    var d = el.dataset;
+    try {
+      switch (act) {
+        case 'menu': CG.showMenu(); return;
+        case 'open': CG.open(d.g); return;
+        case 'settings': CG.showSettings(); return;
+        case 'rules': CG.showRules(); return;
+        case 'set': changeSetting(d.k, d.v); return;
+        case 'dlg':
+          var b = dlgButtons[+d.i];
+          if (!b) return;
+          if (!b.keep) CG.closeDialog();
+          if (b.fn) b.fn();
+          return;
+        case 'new':
+          if (CG.cur) CG.cur.newGame(false);
+          return;
+      }
+      if (CG.cur && CG.cur.act && !CG.dialogOpen()) CG.cur.act(act, d, el);
+    } catch (err) {
+      CG.reportError(err);
+    }
+  }
+
+  var resizeTimer = null;
+  function onResize() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+      if (CG.cur && CG.cur.S && !els.game.hidden) {
+        try { CG.cur.render(); } catch (err) { CG.reportError(err); }
+      }
+    }, 120);
+  }
+
+  CG.init = function () {
+    els.menu = $('menu'); els.game = $('game'); els.board = $('board'); els.stage = $('stage');
+    els.stl = $('stl'); els.str = $('str'); els.title = $('htitle'); els.hbtns = $('hbtns');
+    els.dlg = $('dlg'); els.toast = $('toast');
+    $('hmenu').innerHTML = BACK + 'Menu';
+    loadSettings();
+    applySettings();
+    document.addEventListener('click', onClick, false);
+    window.addEventListener('resize', onResize, false);
+    window.addEventListener('orientationchange', onResize, false);
+    // Stop the page from rubber-banding on iPad, except inside scrolling areas.
+    document.addEventListener('touchmove', function (e) {
+      var t = e.target;
+      if (!(t && t.closest && t.closest('.scroll, #menu'))) e.preventDefault();
+    }, { passive: false });
+    var last = CG.store.get('screen', null);
+    if (last && CG.games[last]) CG.open(last);
+    else CG.showMenu();
+  };
+})();
+
+/* Solitaire games: Klondike, FreeCell, Spider, Pyramid */
+(function () {
+  'use strict';
+  var CG = window.CG;
+
+  /* Shared behaviour for single-player games with undo. */
+  var Sol = {
+    push: function () {
+      this.hist.push(JSON.stringify(this.S));
+      if (this.hist.length > 400) this.hist.shift();
+    },
+    undo: function () {
+      if (this.S.over) return;
+      if (!this.hist || !this.hist.length) { CG.toast('Nothing to undo yet'); return; }
+      this.S = JSON.parse(this.hist.pop());
+      this.sel = null;
+      this.hintInfo = null;
+      this.render();
+    },
+    bgTap: function () {
+      if (this.sel || this.hintInfo) { this.sel = null; this.hintInfo = null; this.render(); }
+    },
+    showHint: function (h) {
+      var self = this;
+      this.sel = null;
+      this.hintInfo = h;
+      this.render();
+      CG.later(function () {
+        if (self.hintInfo === h) { self.hintInfo = null; self.render(); }
+      }, 3000);
+    },
+    resume: function () {
+      this.hist = this.hist || [];
+      this.sel = null;
+      this.hintInfo = null;
+      this.busy = false;
+      this.render();
+    },
+    win: function (msg) {
+      var self = this;
+      this.S.over = true;
+      this.sel = null;
+      CG.addWin(this.id);
+      this.render();
+      CG.later(function () {
+        CG.dialog({
+          title: 'You won!',
+          body: '<p>' + msg + '</p>',
+          buttons: [
+            { label: 'Play again', primary: true, fn: function () { self.newGame(true); } },
+            { label: 'Back to menu', fn: CG.showMenu }
+          ]
+        });
+      }, 500);
+    },
+    start: function (S) {
+      this.S = S;
+      this.hist = [];
+      this.sel = null;
+      this.hintInfo = null;
+      this.busy = false;
+      this.render();
+    },
+    isSel: function (p, i) {
+      var s = this.sel;
+      return !!(s && s.p === p && i >= s.i);
+    },
+    isHint: function (p, i, len) {
+      var h = this.hintInfo;
+      if (!h) return false;
+      if (h.src && h.src.p === p && i >= h.src.i) return true;
+      if (h.dst === p && i === len - 1) return true;
+      if (h.also && h.also.p === p && h.also.i === i) return true;
+      return false;
+    }
+  };
+  function reg(g) {
+    for (var k in Sol) if (!g[k]) g[k] = Sol[k];
+    g.hist = [];
+    CG.register(g);
+  }
+  function top(a) { return a[a.length - 1]; }
+  function selText(c) { return 'Holding ' + CG.cardText(c) + '. Tap where it should go, or tap it again.'; }
+
+  /* ================= KLONDIKE ================= */
+  var K = {
+    id: 'klondike', name: 'Klondike Solitaire', short: 'Klondike', group: 'solo',
+    blurb: 'The classic. Build each suit up from Ace to King.',
+    emblem: [{ r: 13, s: 'h' }, { r: 12, s: 's' }, { r: 1, s: 'd' }],
+    tools: [{ act: 'undo', label: 'Undo' }, { act: 'hint', label: 'Hint' }],
+    rules:
+      '<p><b>Goal:</b> move all 52 cards onto the four foundation piles at the top right, one pile per suit, from Ace up to King.</p>' +
+      '<h4>Moving cards</h4><ul><li>Tap a card to pick it up. It glows gold.</li><li>Tap the place where it should go.</li>' +
+      '<li>Tap a card twice and it moves to the best spot on its own.</li><li>Tap the empty table to put a card back down.</li></ul>' +
+      '<h4>The rules</h4><ul><li>In the seven columns, put a card on one that is one higher and the opposite color: a red 6 on a black 7.</li>' +
+      '<li>You can move a group of face-up cards together.</li><li>Only a King can go in an empty column.</li>' +
+      '<li>Tap the deck (top left) to turn over new cards. When it runs out, tap it again to start over.</li></ul>' +
+      '<p>Stuck? Tap <b>Hint</b>. Made a mistake? Tap <b>Undo</b>.</p>'
+  };
+  function kPile(S, p) {
+    if (p === 'stock') return S.stock;
+    if (p === 'waste') return S.waste;
+    if (p[0] === 'f') return S.found[+p.slice(1)];
+    return S.tab[+p.slice(1)];
+  }
+  function canFound(c, F) {
+    if (!F.length) return c.r === 1;
+    var t = top(F);
+    return t.s === c.s && c.r === t.r + 1;
+  }
+  function altOk(c, T) {
+    if (!T.length) return c.r === 13;
+    var t = top(T);
+    return t.up !== false && CG.red(t) !== CG.red(c) && t.r === c.r + 1;
+  }
+  K.newGame = function (first) {
+    var self = this, pref = CG.store.get('klondike_draw', 1);
+    if (first) return this.deal(pref);
+    var b = [
+      { label: 'Turn 1 card (easier)', primary: pref === 1, fn: function () { self.deal(1); } },
+      { label: 'Turn 3 cards (classic)', primary: pref === 3, fn: function () { self.deal(3); } }
+    ];
+    if (this.S && !this.S.over) b.push({ label: 'Keep playing' });
+    CG.dialog({ title: 'New game of Klondike', body: '<p>How many cards should turn over from the deck each time you tap it?</p>', buttons: b });
+  };
+  K.deal = function (n) {
+    CG.store.set('klondike_draw', n);
+    var deck = CG.shuffle(CG.deck(1));
+    var S = { draw: n, stock: [], waste: [], found: [[], [], [], []], tab: [[], [], [], [], [], [], []], moves: 0, over: false };
+    for (var row = 0; row < 7; row++)
+      for (var col = row; col < 7; col++) {
+        var c = deck.pop();
+        c.up = col === row;
+        S.tab[col].push(c);
+      }
+    deck.forEach(function (c) { c.up = false; });
+    S.stock = deck;
+    this.start(S);
+  };
+  K.selectable = function (p, i) {
+    var P = kPile(this.S, p), c = P[i];
+    if (!c || c.up === false) return false;
+    if (p === 'waste' || p[0] === 'f') return i === P.length - 1;
+    return true;
+  };
+  K.check = function (src, dst) {
+    var S = this.S, from = kPile(S, src.p), c = from[src.i], n = from.length - src.i, to = kPile(S, dst);
+    if (src.p === dst) return 'The card is already there.';
+    if (dst[0] === 'f') {
+      if (n > 1) return 'Move one card at a time to the foundations.';
+      if (!canFound(c, to)) return to.length ? 'Foundations go up in the same suit: Ace, 2, 3 and so on.' : 'Start a foundation with an Ace.';
+      return null;
+    }
+    if (dst[0] === 't') {
+      if (!altOk(c, to)) return to.length ? 'Put a card on one that is one higher and the opposite color.' : 'Only a King can go in an empty column.';
+      return null;
+    }
+    return 'Cards can’t go there.';
+  };
+  K.doMove = function (src, dst) {
+    var S = this.S, from = kPile(S, src.p), to = kPile(S, dst);
+    this.push();
+    var cards = from.splice(src.i, from.length - src.i);
+    for (var i = 0; i < cards.length; i++) to.push(cards[i]);
+    if (src.p[0] === 't' && from.length && top(from).up === false) top(from).up = true;
+    S.moves++;
+    this.sel = null;
+    this.after();
+  };
+  K.autoMove = function (src) {
+    var S = this.S, from = kPile(S, src.p), c = from[src.i], single = src.i === from.length - 1, t;
+    if (single && src.p[0] !== 'f')
+      for (var f = 0; f < 4; f++) if (canFound(c, S.found[f])) { this.doMove(src, 'f' + f); return true; }
+    for (t = 0; t < 7; t++)
+      if ('t' + t !== src.p && S.tab[t].length && altOk(c, S.tab[t])) { this.doMove(src, 't' + t); return true; }
+    if (c.r === 13 && !(src.p[0] === 't' && src.i === 0))
+      for (t = 0; t < 7; t++) if (!S.tab[t].length) { this.doMove(src, 't' + t); return true; }
+    return false;
+  };
+  K.after = function () {
+    var S = this.S, n = 0;
+    S.found.forEach(function (F) { n += F.length; });
+    if (n === 52 && !S.over) return this.win('You finished in ' + S.moves + ' moves.');
+    this.render();
+  };
+  K.drawStock = function () {
+    var S = this.S;
+    if (S.stock.length) {
+      this.push();
+      for (var k = 0; k < S.draw && S.stock.length; k++) {
+        var c = S.stock.pop();
+        c.up = true;
+        S.waste.push(c);
+      }
+      S.moves++;
+    } else if (S.waste.length) {
+      this.push();
+      S.stock = S.waste.reverse();
+      S.stock.forEach(function (c) { c.up = false; });
+      S.waste = [];
+      S.moves++;
+    } else {
+      CG.toast('The deck is empty.');
+      return;
+    }
+    this.render();
+  };
+  K.findHint = function () {
+    var S = this.S, srcs = [], f, t, u, k;
+    if (S.waste.length) srcs.push({ p: 'waste', i: S.waste.length - 1 });
+    for (t = 0; t < 7; t++) if (S.tab[t].length) srcs.push({ p: 't' + t, i: S.tab[t].length - 1 });
+    for (k = 0; k < srcs.length; k++) {
+      var c = kPile(S, srcs[k].p)[srcs[k].i];
+      for (f = 0; f < 4; f++) if (canFound(c, S.found[f])) return { src: srcs[k], dst: 'f' + f };
+    }
+    for (t = 0; t < 7; t++) {
+      var T = S.tab[t], fi = -1;
+      for (k = 0; k < T.length; k++) if (T[k].up !== false) { fi = k; break; }
+      if (fi < 0) continue;
+      if (fi === 0 && T[0].r === 13) continue;
+      for (u = 0; u < 7; u++) {
+        if (u === t) continue;
+        if (!S.tab[u].length && fi === 0) continue;
+        if (altOk(T[fi], S.tab[u])) return { src: { p: 't' + t, i: fi }, dst: 't' + u };
+      }
+    }
+    if (S.waste.length) {
+      var w = top(S.waste);
+      for (u = 0; u < 7; u++) if (altOk(w, S.tab[u])) return { src: { p: 'waste', i: S.waste.length - 1 }, dst: 't' + u };
+    }
+    if (S.stock.length || S.waste.length) return { stock: true };
+    return null;
+  };
+  K.hint = function () {
+    if (this.S.over) return;
+    var h = this.findHint();
+    if (!h) { CG.toast('No moves left. Try Undo, or start a new game.'); return; }
+    if (h.stock) CG.toast('Tap the deck to turn over more cards.');
+    this.showHint(h);
+  };
+  K.canFinish = function () {
+    var S = this.S;
+    if (S.over || S.stock.length || S.waste.length) return false;
+    for (var t = 0; t < 7; t++) for (var i = 0; i < S.tab[t].length; i++) if (S.tab[t][i].up === false) return false;
+    return true;
+  };
+  K.finish = function () {
+    this.push();
+    this.busy = true;
+    this.sel = null;
+    this.finStep();
+  };
+  K.finStep = function () {
+    var S = this.S, self = this, best = null;
+    for (var t = 0; t < 7; t++) {
+      var T = S.tab[t];
+      if (!T.length) continue;
+      var c = top(T);
+      for (var f = 0; f < 4; f++)
+        if (canFound(c, S.found[f]) && (!best || c.r < best.c.r)) best = { t: t, f: f, c: c };
+    }
+    if (!best) { this.busy = false; this.after(); return; }
+    S.found[best.f].push(S.tab[best.t].pop());
+    S.moves++;
+    var n = 0;
+    S.found.forEach(function (F) { n += F.length; });
+    if (n === 52) { this.busy = false; this.after(); return; }
+    this.render();
+    CG.later(function () { self.finStep(); }, CG.wait(120));
+  };
+  K.act = function (a, d) {
+    if (this.S.over || this.busy) return;
+    var hadHint = !!this.hintInfo;
+    this.hintInfo = null;
+    if (a === 'undo') return this.undo();
+    if (a === 'hint') return this.hint();
+    if (a === 'finish') return this.finish();
+    if (a === 'stock') { this.sel = null; return this.drawStock(); }
+    var r;
+    if (a === 'slot') {
+      if (this.sel) {
+        r = this.check(this.sel, d.p);
+        if (!r) return this.doMove(this.sel, d.p);
+        CG.toast(r);
+        this.sel = null;
+      }
+      return this.render();
+    }
+    if (a !== 'card') return;
+    var p = d.p, i = +d.i;
+    if (this.sel) {
+      if (this.sel.p === p && this.sel.i === i) {
+        if (!this.autoMove(this.sel)) { CG.toast('This card has nowhere to go right now.'); this.sel = null; this.render(); }
+        return;
+      }
+      if (this.sel.p !== p) {
+        r = this.check(this.sel, p);
+        if (!r) return this.doMove(this.sel, p);
+        CG.toast(r);
+        this.sel = this.selectable(p, i) ? { p: p, i: i } : null;
+        return this.render();
+      }
+    }
+    this.sel = this.selectable(p, i) ? { p: p, i: i } : null;
+    if (!this.sel && hadHint) CG.hideToast();
+    this.render();
+  };
+  K.render = function () {
+    var S = this.S, W = CG.W(), H = CG.H(), self = this;
+    var gap = Math.max(8, Math.round(Math.min(W, H) * 0.014));
+    var wb = (W - gap * 6) / 7, maxF = 0;
+    S.tab.forEach(function (T) { maxF = Math.max(maxF, CG.stackFactor(T)); });
+    var fit = (H - gap * 1.5) / (1.4 + maxF);
+    var cw = Math.floor(Math.min(wb, Math.max(fit, wb * 0.72), H / 3.3));
+    var ch = cw * 1.4, x0 = Math.round((W - (7 * cw + 6 * gap)) / 2);
+    function X(i) { return x0 + i * (cw + gap); }
+    var hi = this.hintInfo, h = '', f, t;
+    if (S.stock.length) h += CG.card(null, X(0), 0, { act: 'stock', label: S.stock.length, hint: hi && hi.stock });
+    else h += CG.slot(X(0), 0, S.waste.length ? '&#8635;' : '', { act: 'stock', hint: hi && hi.stock });
+    var wn = S.waste.length, show = Math.min(S.draw === 3 ? 3 : 1, wn);
+    if (!wn) h += CG.slot(X(1), 0, '', {});
+    for (var k = 0; k < show; k++) {
+      var idx = wn - show + k, last = idx === wn - 1;
+      h += CG.card(S.waste[idx], X(1) + k * cw * 0.32, 0, last ? {
+        act: 'card', data: { p: 'waste', i: idx }, sel: this.isSel('waste', idx), hint: this.isHint('waste', idx, wn)
+      } : {});
+    }
+    for (f = 0; f < 4; f++) {
+      var F = S.found[f], fp = 'f' + f;
+      if (F.length) h += CG.card(top(F), X(3 + f), 0, { act: 'card', data: { p: fp, i: F.length - 1 }, sel: this.isSel(fp, F.length - 1), hint: this.isHint(fp, F.length - 1, F.length) });
+      else h += CG.slot(X(3 + f), 0, 'A', { act: 'slot', data: { p: fp }, hint: hi && hi.dst === fp });
+    }
+    var ty = Math.round(ch + gap * 1.5), avail = H - ty;
+    for (t = 0; t < 7; t++) {
+      var T = S.tab[t], tp = 't' + t;
+      if (!T.length) { h += CG.slot(X(t), ty, 'K', { act: 'slot', data: { p: tp }, hint: hi && hi.dst === tp }); continue; }
+      var ys = CG.stackYs(T, cw, avail);
+      for (var i = 0; i < T.length; i++)
+        h += CG.card(T[i], X(t), ty + ys[i], { act: 'card', data: { p: tp, i: i }, sel: this.isSel(tp, i), hint: this.isHint(tp, i, T.length) });
+    }
+    CG.paint('<div style="--cw:' + cw + 'px">' + h + '</div>');
+    var left;
+    if (S.over) left = 'Solved! Well done.';
+    else if (this.sel) left = selText(kPile(S, this.sel.p)[this.sel.i]);
+    else if (!S.moves) left = 'Tap a card, then tap where it should go.';
+    else left = 'Moves: ' + S.moves + (S.draw === 3 ? ' &middot; Turning 3' : '');
+    CG.status(left, self.canFinish() && !this.busy ? '<button class="bigbtn primary" data-act="finish">Finish for me</button>' : '');
+    CG.save(this);
+  };
+  reg(K);
+
+  /* ================= FREECELL ================= */
+  var FC = {
+    id: 'freecell', name: 'FreeCell', group: 'solo',
+    blurb: 'All cards face up. Use four free cells to sort them out.',
+    emblem: [{ r: 7, s: 'c' }, { r: 6, s: 'd' }, { r: 5, s: 's' }],
+    tools: [{ act: 'undo', label: 'Undo' }, { act: 'hint', label: 'Hint' }],
+    rules:
+      '<p><b>Goal:</b> move all cards to the four foundations (top right), one suit each, from Ace up to King.</p>' +
+      '<h4>Moving cards</h4><ul><li>Tap a card to pick it up, then tap where it should go.</li><li>Tap a card twice to send it to the best spot.</li></ul>' +
+      '<h4>The rules</h4><ul><li>In the columns, put a card on one that is one higher and the opposite color.</li>' +
+      '<li>The four free cells (top left) each hold one card for later.</li>' +
+      '<li>Any card can go in an empty column.</li>' +
+      '<li>You can move a group of cards at once if you have enough empty free cells and columns. The game tells you how many.</li>' +
+      '<li>Cards that are safe to move go up to the foundations on their own.</li></ul>'
+  };
+  function fPile(S, p) {
+    if (p[0] === 'c') return S.cells[+p.slice(1)];
+    if (p[0] === 'f') return S.found[+p.slice(1)];
+    return S.tab[+p.slice(1)];
+  }
+  FC.newGame = function (first) {
+    var self = this;
+    if (first) return this.deal();
+    CG.confirmNew(this, function () { self.deal(); });
+  };
+  FC.deal = function () {
+    var deck = CG.shuffle(CG.deck(1));
+    var S = { cells: [[], [], [], []], found: [[], [], [], []], tab: [[], [], [], [], [], [], [], []], moves: 0, over: false };
+    for (var i = 0; i < 52; i++) S.tab[i % 8].push(deck[i]);
+    this.start(S);
+  };
+  FC.selectable = function (p, i) {
+    var P = fPile(this.S, p);
+    if (!P[i] || p[0] === 'f') return false;
+    if (p[0] === 'c') return true;
+    for (var k = i; k < P.length - 1; k++)
+      if (CG.red(P[k]) === CG.red(P[k + 1]) || P[k].r !== P[k + 1].r + 1) return false;
+    return true;
+  };
+  FC.maxMove = function (toEmpty) {
+    var S = this.S, free = 0, empty = 0;
+    S.cells.forEach(function (c) { if (!c.length) free++; });
+    S.tab.forEach(function (t) { if (!t.length) empty++; });
+    if (toEmpty) empty--;
+    return (free + 1) * Math.pow(2, Math.max(0, empty));
+  };
+  FC.check = function (src, dst) {
+    var S = this.S, from = fPile(S, src.p), c = from[src.i], n = from.length - src.i, to = fPile(S, dst);
+    if (src.p === dst) return 'The card is already there.';
+    if (dst[0] === 'c') {
+      if (n > 1) return 'A free cell holds just one card.';
+      if (to.length) return 'That free cell is already in use.';
+      return null;
+    }
+    if (dst[0] === 'f') {
+      if (n > 1) return 'Move one card at a time to the foundations.';
+      if (!canFound(c, to)) return to.length ? 'Foundations go up in the same suit.' : 'Start a foundation with an Ace.';
+      return null;
+    }
+    if (to.length) {
+      var t = top(to);
+      if (CG.red(t) === CG.red(c) || t.r !== c.r + 1) return 'Put a card on one that is one higher and the opposite color.';
+    }
+    var max = this.maxMove(!to.length);
+    if (n > max) return 'With the free space you have, you can move ' + max + ' card' + (max === 1 ? '' : 's') + ' at once.';
+    return null;
+  };
+  FC.fr = function (s) {
+    var S = this.S;
+    for (var f = 0; f < 4; f++) if (S.found[f].length && S.found[f][0].s === s) return S.found[f].length;
+    return 0;
+  };
+  FC.safe = function (c) {
+    if (c.r <= 2) return true;
+    var o = CG.red(c) ? ['s', 'c'] : ['h', 'd'];
+    return this.fr(o[0]) >= c.r - 1 && this.fr(o[1]) >= c.r - 1;
+  };
+  FC.autoFound = function () {
+    var S = this.S, moved = true;
+    while (moved) {
+      moved = false;
+      var piles = S.cells.concat(S.tab);
+      for (var k = 0; k < piles.length && !moved; k++) {
+        var P = piles[k];
+        if (!P.length) continue;
+        var c = top(P);
+        if (!this.safe(c)) continue;
+        for (var f = 0; f < 4; f++)
+          if (canFound(c, S.found[f])) { S.found[f].push(P.pop()); moved = true; break; }
+      }
+    }
+  };
+  FC.doMove = function (src, dst) {
+    var S = this.S, from = fPile(S, src.p), to = fPile(S, dst);
+    this.push();
+    var cards = from.splice(src.i, from.length - src.i);
+    for (var i = 0; i < cards.length; i++) to.push(cards[i]);
+    S.moves++;
+    this.sel = null;
+    this.autoFound();
+    this.after();
+  };
+  FC.after = function () {
+    var n = 0;
+    this.S.found.forEach(function (F) { n += F.length; });
+    if (n === 52 && !this.S.over) return this.win('You solved it in ' + this.S.moves + ' moves.');
+    this.render();
+  };
+  FC.autoMove = function (src) {
+    var S = this.S, from = fPile(S, src.p), c = from[src.i], single = src.i === from.length - 1, t, k;
+    if (single) for (var f = 0; f < 4; f++) if (canFound(c, S.found[f])) { this.doMove(src, 'f' + f); return true; }
+    for (t = 0; t < 8; t++) if ('t' + t !== src.p && S.tab[t].length && !this.check(src, 't' + t)) { this.doMove(src, 't' + t); return true; }
+    if (!(src.p[0] === 't' && src.i === 0))
+      for (t = 0; t < 8; t++) if (!S.tab[t].length && !this.check(src, 't' + t)) { this.doMove(src, 't' + t); return true; }
+    if (single && src.p[0] !== 'c')
+      for (k = 0; k < 4; k++) if (!S.cells[k].length) { this.doMove(src, 'c' + k); return true; }
+    return false;
+  };
+  FC.findHint = function () {
+    var S = this.S, t, u, k, f, i;
+    var srcs = [];
+    for (k = 0; k < 4; k++) if (S.cells[k].length) srcs.push({ p: 'c' + k, i: 0 });
+    for (t = 0; t < 8; t++) if (S.tab[t].length) srcs.push({ p: 't' + t, i: S.tab[t].length - 1 });
+    for (k = 0; k < srcs.length; k++) {
+      var c = fPile(S, srcs[k].p)[srcs[k].i];
+      for (f = 0; f < 4; f++) if (canFound(c, S.found[f])) return { src: srcs[k], dst: 'f' + f };
+    }
+    for (t = 0; t < 8; t++) {
+      var T = S.tab[t];
+      for (i = 0; i < T.length; i++) {
+        if (!this.selectable('t' + t, i)) continue;
+        for (u = 0; u < 8; u++)
+          if (u !== t && S.tab[u].length && !this.check({ p: 't' + t, i: i }, 't' + u)) return { src: { p: 't' + t, i: i }, dst: 't' + u };
+        break;
+      }
+    }
+    for (k = 0; k < 4; k++) {
+      if (!S.cells[k].length) continue;
+      for (u = 0; u < 8; u++) if (S.tab[u].length && !this.check({ p: 'c' + k, i: 0 }, 't' + u)) return { src: { p: 'c' + k, i: 0 }, dst: 't' + u };
+    }
+    return null;
+  };
+  FC.hint = function () {
+    if (this.S.over) return;
+    var h = this.findHint();
+    if (!h) { CG.toast('Try moving a card to a free cell or an empty column.'); return; }
+    this.showHint(h);
+  };
+  FC.act = function (a, d) {
+    if (this.S.over) return;
+    this.hintInfo = null;
+    if (a === 'undo') return this.undo();
+    if (a === 'hint') return this.hint();
+    var r;
+    if (a === 'slot') {
+      if (this.sel) {
+        r = this.check(this.sel, d.p);
+        if (!r) return this.doMove(this.sel, d.p);
+        CG.toast(r);
+        this.sel = null;
+      }
+      return this.render();
+    }
+    if (a !== 'card') return;
+    var p = d.p, i = +d.i;
+    if (this.sel) {
+      if (this.sel.p === p && this.sel.i === i) {
+        if (!this.autoMove(this.sel)) { CG.toast('This card has nowhere to go right now.'); this.sel = null; this.render(); }
+        return;
+      }
+      if (this.sel.p !== p) {
+        r = this.check(this.sel, p);
+        if (!r) return this.doMove(this.sel, p);
+        CG.toast(r);
+        this.sel = this.selectable(p, i) ? { p: p, i: i } : null;
+        return this.render();
+      }
+    }
+    if (!this.selectable(p, i) && p[0] === 't') CG.toast('You can only pick up cards that are in order, from the bottom of a column.');
+    this.sel = this.selectable(p, i) ? { p: p, i: i } : null;
+    this.render();
+  };
+  FC.render = function () {
+    var S = this.S, W = CG.W(), H = CG.H();
+    var gap = Math.max(7, Math.round(Math.min(W, H) * 0.012));
+    var wb = (W - gap * 7) / 8, maxF = 0;
+    S.tab.forEach(function (T) { maxF = Math.max(maxF, CG.stackFactor(T)); });
+    var fit = (H - gap * 1.5) / (1.4 + maxF);
+    var cw = Math.floor(Math.min(wb, Math.max(fit, wb * 0.72), H / 3.3));
+    var ch = cw * 1.4, x0 = Math.round((W - (8 * cw + 7 * gap)) / 2);
+    function X(i) { return x0 + i * (cw + gap); }
+    var hi = this.hintInfo, h = '', k, t;
+    for (k = 0; k < 4; k++) {
+      var C = S.cells[k], cp = 'c' + k;
+      if (C.length) h += CG.card(C[0], X(k), 0, { act: 'card', data: { p: cp, i: 0 }, sel: this.isSel(cp, 0), hint: this.isHint(cp, 0, 1) });
+      else h += CG.slot(X(k), 0, 'Free<small>cell</small>', { act: 'slot', data: { p: cp }, hint: hi && hi.dst === cp });
+    }
+    for (k = 0; k < 4; k++) {
+      var F = S.found[k], fp = 'f' + k;
+      if (F.length) h += CG.card(top(F), X(4 + k), 0, { act: 'card', data: { p: fp, i: F.length - 1 }, hint: this.isHint(fp, F.length - 1, F.length) });
+      else h += CG.slot(X(4 + k), 0, 'A', { act: 'slot', data: { p: fp }, hint: hi && hi.dst === fp });
+    }
+    var ty = Math.round(ch + gap * 1.5), avail = H - ty;
+    for (t = 0; t < 8; t++) {
+      var T = S.tab[t], tp = 't' + t;
+      if (!T.length) { h += CG.slot(X(t), ty, '', { act: 'slot', data: { p: tp }, hint: hi && hi.dst === tp }); continue; }
+      var ys = CG.stackYs(T, cw, avail);
+      for (var i = 0; i < T.length; i++)
+        h += CG.card(T[i], X(t), ty + ys[i], { act: 'card', data: { p: tp, i: i }, sel: this.isSel(tp, i), hint: this.isHint(tp, i, T.length) });
+    }
+    CG.paint('<div style="--cw:' + cw + 'px">' + h + '</div>');
+    var left;
+    if (S.over) left = 'Solved! Well done.';
+    else if (this.sel) left = selText(fPile(S, this.sel.p)[this.sel.i]);
+    else left = S.moves ? 'Moves: ' + S.moves + ' &middot; You can move ' + this.maxMove(false) + ' cards at once' : 'Tap a card, then tap where it should go.';
+    CG.status(left, '');
+    CG.save(this);
+  };
+  reg(FC);
+
+  /* ================= SPIDER ================= */
+  var SP = {
+    id: 'spider', name: 'Spider Solitaire', short: 'Spider', group: 'solo',
+    blurb: 'Build full runs from King down to Ace to clear the table.',
+    emblem: [{ r: 13, s: 's' }, { r: 12, s: 's' }, { r: 11, s: 's' }],
+    tools: [{ act: 'undo', label: 'Undo' }, { act: 'hint', label: 'Hint' }],
+    rules:
+      '<p><b>Goal:</b> make 8 complete runs from King down to Ace in one suit. Each finished run leaves the table.</p>' +
+      '<h4>The rules</h4><ul><li>Put any card on a card that is one higher, whatever the suit: a 6 on any 7.</li>' +
+      '<li>You can pick up a group of cards only if they are all the same suit and in order.</li>' +
+      '<li>Any card or group can go into an empty column.</li>' +
+      '<li>Tap <b>Deal</b> (top right) to put one new card on every column. All columns must have at least one card first.</li></ul>' +
+      '<p>Tap a card twice to send it to the best spot. One suit is the easiest game.</p>'
+  };
+  SP.newGame = function (first) {
+    var self = this, pref = CG.store.get('spider_suits', 1);
+    if (first) return this.deal(pref);
+    var b = [
+      { label: '1 suit (easiest)', primary: pref === 1, fn: function () { self.deal(1); } },
+      { label: '2 suits (medium)', primary: pref === 2, fn: function () { self.deal(2); } },
+      { label: '4 suits (hard)', primary: pref === 4, fn: function () { self.deal(4); } }
+    ];
+    if (this.S && !this.S.over) b.push({ label: 'Keep playing' });
+    CG.dialog({ title: 'New game of Spider', body: '<p>How many suits do you want to play with?</p>', buttons: b });
+  };
+  SP.deal = function (n) {
+    CG.store.set('spider_suits', n);
+    var suits = n === 1 ? ['s'] : n === 2 ? ['s', 'h'] : ['s', 'h', 'd', 'c'];
+    var deck = CG.shuffle(CG.deck(8 / suits.length, 0, suits));
+    var S = { suits: n, tab: [], stock: [], done: [], moves: 0, over: false };
+    for (var t = 0; t < 10; t++) S.tab.push([]);
+    for (var i = 0; i < 54; i++) { var c = deck.pop(); c.up = false; S.tab[i % 10].push(c); }
+    S.tab.forEach(function (T) { top(T).up = true; });
+    deck.forEach(function (c) { c.up = false; });
+    S.stock = deck;
+    this.start(S);
+  };
+  SP.selectable = function (t, i) {
+    var T = this.S.tab[t];
+    if (!T[i] || T[i].up === false) return false;
+    for (var k = i; k < T.length - 1; k++) if (T[k + 1].s !== T[k].s || T[k + 1].r !== T[k].r - 1) return false;
+    return true;
+  };
+  SP.check = function (src, u) {
+    var T = this.S.tab[src.t], c = T[src.i], D = this.S.tab[u];
+    if (src.t === u) return 'The cards are already there.';
+    if (D.length && top(D).r !== c.r + 1) return 'Put a card on one that is exactly one higher.';
+    return null;
+  };
+  SP.completeRuns = function () {
+    var S = this.S, found = false;
+    S.tab.forEach(function (T) {
+      if (T.length < 13) return;
+      var b = T.length - 13;
+      for (var k = 0; k < 13; k++) {
+        var c = T[b + k];
+        if (c.up === false || c.s !== T[b].s || c.r !== 13 - k) return;
+      }
+      S.done.push(T[b].s);
+      T.splice(b, 13);
+      if (T.length && top(T).up === false) top(T).up = true;
+      found = true;
+    });
+    return found;
+  };
+  SP.doMove = function (src, u) {
+    var S = this.S, T = S.tab[src.t], D = S.tab[u];
+    this.push();
+    var cards = T.splice(src.i, T.length - src.i);
+    for (var i = 0; i < cards.length; i++) D.push(cards[i]);
+    if (T.length && top(T).up === false) top(T).up = true;
+    S.moves++;
+    this.sel = null;
+    if (this.completeRuns()) CG.toast('A full run is done!');
+    this.after();
+  };
+  SP.after = function () {
+    if (this.S.done.length >= 8 && !this.S.over) return this.win('All 8 runs are done in ' + this.S.moves + ' moves.');
+    this.render();
+  };
+  SP.dealRow = function () {
+    var S = this.S;
+    if (!S.stock.length) { CG.toast('There are no more cards to deal.'); return; }
+    for (var t = 0; t < 10; t++) if (!S.tab[t].length) { CG.toast('Put a card in every empty column before dealing.'); return; }
+    this.push();
+    for (t = 0; t < 10; t++) { var c = S.stock.pop(); c.up = true; S.tab[t].push(c); }
+    S.moves++;
+    this.sel = null;
+    if (this.completeRuns()) CG.toast('A full run is done!');
+    this.after();
+  };
+  SP.runStart = function (t) {
+    var T = this.S.tab[t];
+    if (!T.length) return -1;
+    var i = T.length - 1;
+    while (i > 0 && this.selectable(t, i - 1)) i--;
+    return i;
+  };
+  SP.autoMove = function (src) {
+    var S = this.S, c = S.tab[src.t][src.i], u, best = -1;
+    for (u = 0; u < 10; u++) {
+      if (u === src.t || !S.tab[u].length) continue;
+      var tp = top(S.tab[u]);
+      if (tp.r === c.r + 1 && tp.s === c.s) { best = u; break; }
+      if (tp.r === c.r + 1 && best < 0) best = u;
+    }
+    if (best < 0 && src.i > 0) for (u = 0; u < 10; u++) if (!S.tab[u].length) { best = u; break; }
+    if (best < 0) return false;
+    this.doMove(src, best);
+    return true;
+  };
+  SP.findHint = function () {
+    var S = this.S, t, u, pass;
+    for (pass = 0; pass < 2; pass++) {
+      for (t = 0; t < 10; t++) {
+        var i = this.runStart(t);
+        if (i < 0) continue;
+        var T = S.tab[t], c = T[i];
+        var below = i > 0 ? T[i - 1] : null;
+        for (u = 0; u < 10; u++) {
+          if (u === t || !S.tab[u].length) continue;
+          var tp = top(S.tab[u]);
+          if (tp.r !== c.r + 1) continue;
+          var sameSuit = tp.s === c.s;
+          var alreadyHome = below && below.up !== false && below.r === c.r + 1 && below.s === c.s;
+          if (alreadyHome) continue;
+          if (pass === 0 && sameSuit) return { src: { p: 't' + t, i: i }, dst: 't' + u };
+          if (pass === 1 && !(below && below.up !== false && below.r === c.r + 1)) return { src: { p: 't' + t, i: i }, dst: 't' + u };
+        }
+      }
+    }
+    if (S.stock.length) return { deal: true };
+    return null;
+  };
+  SP.hint = function () {
+    if (this.S.over) return;
+    var h = this.findHint();
+    if (!h) { CG.toast('No helpful moves left. Try Undo, or start a new game.'); return; }
+    if (h.deal) { CG.toast('Tap Deal to put a new card on every column.'); return; }
+    this.showHint(h);
+  };
+  SP.act = function (a, d) {
+    if (this.S.over) return;
+    this.hintInfo = null;
+    if (a === 'undo') return this.undo();
+    if (a === 'hint') return this.hint();
+    if (a === 'deal') return this.dealRow();
+    var r, u;
+    if (a === 'slot') {
+      u = +d.p.slice(1);
+      if (this.sel) {
+        r = this.check(this.sel, u);
+        if (!r) return this.doMove(this.sel, u);
+        CG.toast(r);
+        this.sel = null;
+      }
+      return this.render();
+    }
+    if (a !== 'card') return;
+    var t = +d.p.slice(1), i = +d.i;
+    if (this.sel) {
+      if (this.sel.t === t && this.sel.i === i) {
+        if (!this.autoMove(this.sel)) { CG.toast('This card has nowhere to go right now.'); this.sel = null; this.render(); }
+        return;
+      }
+      if (this.sel.t !== t) {
+        r = this.check(this.sel, t);
+        if (!r) return this.doMove(this.sel, t);
+        CG.toast(r);
+        this.sel = this.selectable(t, i) ? { t: t, i: i, p: 't' + t } : null;
+        return this.render();
+      }
+    }
+    if (!this.selectable(t, i) && this.S.tab[t][i].up !== false) CG.toast('You can only pick up cards of one suit that are in order.');
+    this.sel = this.selectable(t, i) ? { t: t, i: i, p: 't' + t } : null;
+    this.render();
+  };
+  SP.render = function () {
+    var S = this.S, W = CG.W(), H = CG.H();
+    var gap = Math.max(6, Math.round(Math.min(W, H) * 0.01));
+    var wb = (W - gap * 9) / 10, maxF = 0;
+    S.tab.forEach(function (T) { maxF = Math.max(maxF, CG.stackFactor(T, { down: 0.14 })); });
+    var fit = H / maxF;
+    var cw = Math.floor(Math.min(wb, Math.max(fit, wb * 0.75), H / 2.2));
+    var x0 = Math.round((W - (10 * cw + 9 * gap)) / 2), h = '', hi = this.hintInfo;
+    for (var t = 0; t < 10; t++) {
+      var T = S.tab[t], tp = 't' + t, X = x0 + t * (cw + gap);
+      if (!T.length) { h += CG.slot(X, 0, '', { act: 'slot', data: { p: tp }, hint: hi && hi.dst === tp }); continue; }
+      var ys = CG.stackYs(T, cw, H, { down: 0.14, minUp: 0.22, minDown: 0.06 });
+      for (var i = 0; i < T.length; i++)
+        h += CG.card(T[i], X, ys[i], { act: 'card', data: { p: tp, i: i }, sel: this.isSel(tp, i), hint: this.isHint(tp, i, T.length) });
+    }
+    CG.paint('<div style="--cw:' + cw + 'px">' + h + '</div>');
+    var left;
+    if (S.over) left = 'All runs done!';
+    else if (this.sel) left = selText(S.tab[this.sel.t][this.sel.i]);
+    else left = 'Runs done: ' + S.done.length + ' of 8 &middot; Moves: ' + S.moves;
+    var deals = S.stock.length / 10;
+    CG.status(left, S.over ? '' : '<button class="bigbtn primary" data-act="deal"' + (deals ? '' : ' disabled') + '>Deal (' + deals + ' left)</button>');
+    CG.save(this);
+    if (W < H && !this.tipped) {
+      this.tipped = true;
+      CG.toast('Tip: turn the iPad sideways to make these cards bigger.', 4500);
+    }
+  };
+  reg(SP);
+
+  /* ================= PYRAMID ================= */
+  var PY = {
+    id: 'pyramid', name: 'Pyramid', group: 'solo',
+    blurb: 'Pair up cards that add to 13 to clear the pyramid.',
+    emblem: [{ r: 13, s: 'c' }, { r: 6, s: 'h' }, { r: 7, s: 's' }],
+    tools: [{ act: 'undo', label: 'Undo' }, { act: 'hint', label: 'Hint' }],
+    rules:
+      '<p><b>Goal:</b> remove every card from the pyramid.</p>' +
+      '<h4>How</h4><ul><li>Tap two cards that add up to 13 and they are removed.</li>' +
+      '<li>Ace counts 1, Jack 11, Queen 12. A King is 13 on its own, so tap a King once to remove it.</li>' +
+      '<li>Pairs that make 13: A+Q, 2+J, 3+10, 4+9, 5+8, 6+7.</li>' +
+      '<li>You can only use a card when no cards are covering it. Covered cards look darker.</li>' +
+      '<li>Tap the deck to turn over a new card. You can also pair the turned-over card.</li>' +
+      '<li>You can go through the deck 3 times.</li></ul>'
+  };
+  var PROW = [], PPOS = [];
+  (function () {
+    for (var r = 0; r < 7; r++) for (var k = 0; k <= r; k++) { PROW.push(r); PPOS.push(k); }
+  })();
+  function pIdx(r, k) { return r * (r + 1) / 2 + k; }
+  function pv(c) { return c.r; }
+  PY.newGame = function (first) {
+    var self = this;
+    if (first) return this.deal();
+    CG.confirmNew(this, function () { self.deal(); });
+  };
+  PY.deal = function () {
+    var deck = CG.shuffle(CG.deck(1));
+    var S = { pyr: deck.slice(0, 28), stock: deck.slice(28), waste: [], pass: 1, maxPass: 3, moves: 0, over: false };
+    S.stock.forEach(function (c) { c.up = false; });
+    this.start(S);
+  };
+  PY.avail = function (i) {
+    var S = this.S;
+    if (!S.pyr[i]) return false;
+    var r = PROW[i], k = PPOS[i];
+    if (r === 6) return true;
+    return !S.pyr[pIdx(r + 1, k)] && !S.pyr[pIdx(r + 1, k + 1)];
+  };
+  PY.cardOf = function (sel) {
+    return sel.p === 'p' ? this.S.pyr[sel.i] : top(this.S.waste);
+  };
+  PY.removeSel = function (sel) {
+    if (sel.p === 'p') this.S.pyr[sel.i] = null;
+    else this.S.waste.pop();
+  };
+  PY.tapCard = function (sel) {
+    var c = this.cardOf(sel), self = this;
+    if (c.r === 13) {
+      this.push();
+      this.removeSel(sel);
+      this.S.moves++;
+      this.sel = null;
+      return this.after();
+    }
+    if (this.sel) {
+      if (this.sel.p === sel.p && this.sel.i === sel.i) { this.sel = null; return this.render(); }
+      var o = this.cardOf(this.sel);
+      if (pv(o) + pv(c) === 13) {
+        this.push();
+        var a = this.sel, b = sel;
+        // remove waste last so indexes stay right
+        if (a.p === 'w') { this.removeSel(b); this.removeSel(a); } else { this.removeSel(a); this.removeSel(b); }
+        this.S.moves++;
+        this.sel = null;
+        return this.after();
+      }
+      CG.toast(CG.cardText(o) + ' and ' + CG.cardText(c) + ' add up to ' + (pv(o) + pv(c)) + ', not 13.');
+    }
+    this.sel = sel;
+    self.render();
+  };
+  PY.pairs = function () {
+    var S = this.S, av = [], out = [], i, j;
+    for (i = 0; i < 28; i++) if (this.avail(i)) av.push({ p: 'p', i: i });
+    if (S.waste.length) av.push({ p: 'w', i: S.waste.length - 1 });
+    for (i = 0; i < av.length; i++) {
+      var a = this.cardOf(av[i]);
+      if (a.r === 13) out.push([av[i]]);
+      for (j = i + 1; j < av.length; j++) if (pv(a) + pv(this.cardOf(av[j])) === 13) out.push([av[i], av[j]]);
+    }
+    return out;
+  };
+  PY.after = function () {
+    var S = this.S, left = 0;
+    S.pyr.forEach(function (c) { if (c) left++; });
+    if (!left && !S.over) return this.win('You cleared the pyramid in ' + S.moves + ' moves.');
+    this.render();
+    if (!S.stock.length && (S.pass >= S.maxPass || !S.waste.length) && !this.pairs().length) {
+      var self = this;
+      S.over = true;
+      CG.save(this);
+      CG.later(function () {
+        CG.dialog({
+          title: 'No more moves',
+          body: '<p>There are no pairs left and the deck is used up. ' + left + ' cards were left in the pyramid.</p>',
+          buttons: [
+            { label: 'Deal a new game', primary: true, fn: function () { self.newGame(true); } },
+            { label: 'Undo last move', fn: function () { S.over = false; self.undo(); } },
+            { label: 'Back to menu', fn: CG.showMenu }
+          ]
+        });
+      }, 600);
+    }
+  };
+  PY.drawStock = function () {
+    var S = this.S;
+    this.sel = null;
+    if (S.stock.length) {
+      this.push();
+      var c = S.stock.pop();
+      c.up = true;
+      S.waste.push(c);
+      S.moves++;
+    } else if (S.pass < S.maxPass && S.waste.length) {
+      this.push();
+      S.stock = S.waste.reverse();
+      S.stock.forEach(function (c) { c.up = false; });
+      S.waste = [];
+      S.pass++;
+      S.moves++;
+      CG.toast('Pass ' + S.pass + ' of ' + S.maxPass + ' through the deck.');
+    } else {
+      CG.toast('No more passes through the deck.');
+      return;
+    }
+    this.after();
+  };
+  PY.hint = function () {
+    if (this.S.over) return;
+    var p = this.pairs();
+    if (p.length) {
+      var h = { also: p[0][0].p === 'p' ? { p: 'p', i: p[0][0].i } : { p: 'w', i: p[0][0].i } };
+      if (p[0][1]) h.also2 = p[0][1];
+      return this.showHint(h);
+    }
+    if (this.S.stock.length || (this.S.pass < this.S.maxPass && this.S.waste.length)) {
+      CG.toast('Tap the deck to turn over a card.');
+      return this.showHint({ stock: true });
+    }
+    CG.toast('No moves left.');
+  };
+  PY.isPyHint = function (p, i) {
+    var h = this.hintInfo;
+    if (!h) return false;
+    function m(x) { return x && x.p === p && x.i === i; }
+    return m(h.also) || m(h.also2);
+  };
+  PY.act = function (a, d) {
+    if (this.S.over) return;
+    this.hintInfo = null;
+    if (a === 'undo') return this.undo();
+    if (a === 'hint') return this.hint();
+    if (a === 'stock') return this.drawStock();
+    if (a === 'pcard') {
+      var i = +d.i;
+      if (!this.avail(i)) { CG.toast('That card is covered. Clear the two cards below it first.'); return; }
+      return this.tapCard({ p: 'p', i: i });
+    }
+    if (a === 'wcard') return this.tapCard({ p: 'w', i: this.S.waste.length - 1 });
+  };
+  PY.render = function () {
+    var S = this.S, W = CG.W(), H = CG.H(), wide = W > H * 1.1, h = '', hi = this.hintInfo;
+    var gap = Math.max(8, Math.round(Math.min(W, H) * 0.015)), cw, px0, py0, sx, sy, wx, wy;
+    if (wide) {
+      cw = Math.floor(Math.min(W / (7.7 + 1.6), (H - 4) / 5.6));
+      var side = cw + gap * 2;
+      px0 = side + Math.round((W - side - 7.66 * cw) / 2);
+      py0 = Math.round((H - 5.6 * cw) / 2);
+      sx = 0; sy = Math.round(H / 2 - cw * 1.4 - gap / 2);
+      wx = 0; wy = Math.round(H / 2 + gap / 2);
+    } else {
+      cw = Math.floor(Math.min(W / 7.7, (H - gap * 2) / 7.1));
+      px0 = Math.round((W - 7.66 * cw) / 2);
+      py0 = 0;
+      sy = wy = Math.round(5.6 * cw + gap * 2);
+      sx = Math.round(W / 2 - cw - gap); wx = Math.round(W / 2 + gap);
+    }
+    for (var i = 0; i < 28; i++) {
+      var c = S.pyr[i];
+      if (!c) continue;
+      var r = PROW[i], k = PPOS[i], av = this.avail(i);
+      var x = px0 + (6 - r) * 0.555 * cw + k * 1.11 * cw, y = py0 + r * 0.7 * cw;
+      h += CG.card(c, x, y, {
+        act: 'pcard', data: { i: i }, cls: av ? '' : 'dimlite',
+        sel: !!(this.sel && this.sel.p === 'p' && this.sel.i === i), hint: this.isPyHint('p', i)
+      });
+    }
+    if (S.stock.length) h += CG.card(null, sx, sy, { act: 'stock', label: S.stock.length, hint: hi && hi.stock });
+    else h += CG.slot(sx, sy, S.pass < S.maxPass && S.waste.length ? '&#8635;' : 'Empty', { act: 'stock', hint: hi && hi.stock });
+    if (S.waste.length) {
+      var wi = S.waste.length - 1;
+      h += CG.card(top(S.waste), wx, wy, { act: 'wcard', sel: !!(this.sel && this.sel.p === 'w'), hint: this.isPyHint('w', wi) });
+    } else h += CG.slot(wx, wy, '', {});
+    CG.paint('<div style="--cw:' + cw + 'px">' + h + '</div>');
+    var left;
+    if (this.sel) {
+      var sc = this.cardOf(this.sel);
+      left = 'Holding ' + CG.cardText(sc) + '. Find a card worth ' + (13 - sc.r) + ' (' + (13 - sc.r === 1 ? 'Ace' : 13 - sc.r === 11 ? 'Jack' : 13 - sc.r === 12 ? 'Queen' : 13 - sc.r) + ').';
+    } else left = 'Pairs that add to 13 &middot; Deck pass ' + S.pass + ' of ' + S.maxPass;
+    CG.status(left, '');
+    CG.save(this);
+  };
+  reg(PY);
+})();
+
+/* Trick-taking games: Hearts and Spades (you against three computer players). */
+(function () {
+  'use strict';
+  var CG = window.CG;
+  var hv = CG.hi;
+  function hasCard(arr, f) { for (var i = 0; i < arr.length; i++) if (f(arr[i])) return arr[i]; return null; }
+  function byHigh(a) { return a.slice().sort(function (x, y) { return hv(y) - hv(x); }); }
+  function byLow(a) { return a.slice().sort(function (x, y) { return hv(x) - hv(y); }); }
+  function isQS(c) { return c.s === 's' && c.r === 12; }
+  function suitWord(s) { return CG.SUIT_ONE[s] + ' ' + CG.suitSvg(s, 'si'); }
+
+  var TB = {
+    newGame: function (first) {
+      var self = this;
+      if (first) return this.startGame();
+      CG.confirmNew(this, function () { self.startGame(); });
+    },
+    startGame: function () {
+      CG.clearTimers();
+      this.S = this.initState();
+      this.sel = null;
+      this.passSel = [];
+      this.startHand();
+    },
+    dealCards: function () {
+      var S = this.S, deck = CG.shuffle(CG.deck(1));
+      S.hands = [[], [], [], []];
+      for (var i = 0; i < 52; i++) S.hands[i % 4].push(deck[i]);
+      for (var p = 0; p < 4; p++) this.sortHand(S.hands[p]);
+      S.trick = []; S.tricks = [0, 0, 0, 0]; S.trickNo = 0; S.winner = null; S.received = [];
+      this.sel = null;
+      this.passSel = [];
+    },
+    sortHand: function (h) {
+      var o = this.suitOrder;
+      h.sort(function (a, b) { return a.s !== b.s ? o.indexOf(a.s) - o.indexOf(b.s) : hv(a) - hv(b); });
+    },
+    resume: function () {
+      this.sel = null;
+      this.passSel = [];
+      if (this.S.phase === 'handEnd') { this.render(); this.showHandEnd(); return; }
+      this.advance();
+    },
+    advance: function () {
+      var S = this.S, self = this;
+      if (S.over) return this.render();
+      if (S.phase === 'play') {
+        if (S.trick.length === 4) {
+          this.render();
+          CG.later(function () { if (S === self.S) self.collect(); }, CG.wait(1800));
+          return;
+        }
+        this.render();
+        if (S.turn === 0 && !CG.autoplay) return;
+        CG.later(function () {
+          if (S !== self.S || S.phase !== 'play' || S.trick.length === 4) return;
+          self.playCard(S.turn, self.aiPlay(S.turn));
+        }, CG.wait(S.trick.length ? 950 : 1150));
+        return;
+      }
+      if (this.advancePhase) this.advancePhase();
+      else this.render();
+    },
+    playCard: function (p, c) {
+      var S = this.S, hand = S.hands[p], i = CG.byId(hand, c.id);
+      if (i < 0) return;
+      hand.splice(i, 1);
+      S.trick.push({ p: p, c: c });
+      this.onPlay(c, p);
+      S.turn = (p + 1) % 4;
+      this.sel = null;
+      if (S.trick.length === 4) S.winner = this.winner(S.trick);
+      this.advance();
+    },
+    collect: function () {
+      var S = this.S, w = S.winner;
+      S.tricks[w]++;
+      this.onCollect(w, S.trick.map(function (t) { return t.c; }));
+      S.trick = [];
+      S.trickNo++;
+      S.received = [];
+      S.leader = S.turn = w;
+      S.winner = null;
+      if (!S.hands[0].length) return this.endHand();
+      this.advance();
+    },
+    currentWinner: function () {
+      var S = this.S;
+      return S.trick.length ? this.winner(S.trick) : -1;
+    },
+    showHandEnd: function () {
+      var S = this.S, self = this, sm = S.summary;
+      var btns = sm.gameOver ? [
+        { label: 'Play a new game', primary: true, fn: function () { self.startGame(); } },
+        { label: 'Back to menu', fn: CG.showMenu }
+      ] : [{ label: 'Deal the next hand', primary: true, fn: function () { self.startHand(); } }];
+      CG.dialog({ title: sm.title, body: sm.body, buttons: btns });
+    },
+    finishHand: function (title, body, gameOver) {
+      var S = this.S;
+      S.phase = 'handEnd';
+      S.summary = { title: title, body: body, gameOver: gameOver };
+      if (gameOver) S.over = true;
+      this.render();
+      var self = this;
+      CG.later(function () { self.showHandEnd(); }, CG.wait(700));
+    },
+    bgTap: function () {
+      if (this.sel != null) { this.sel = null; this.render(); }
+    },
+    act: function (a, d) {
+      var S = this.S;
+      if (a === 'scores') return CG.dialog({ title: 'Scores', body: this.scoreTable(), buttons: [{ label: 'Back to the game', primary: true }] });
+      if (S.over) return;
+      if (a === 'hand') return this.tapHand(+d.id);
+      if (this.actExtra) this.actExtra(a, d);
+    },
+    tapHand: function (id) {
+      var S = this.S;
+      if (S.phase === 'pass') return this.togglePass(id);
+      if (S.phase !== 'play' || S.turn !== 0 || S.trick.length === 4) {
+        CG.toast(S.phase === 'bid' ? 'Choose your bid first.' : 'Please wait for your turn.');
+        return;
+      }
+      var hand = S.hands[0], i = CG.byId(hand, id);
+      if (i < 0) return;
+      var c = hand[i];
+      if (CG.byId(this.legal(S, 0), id) < 0) { CG.toast(this.whyNot(S, c)); return; }
+      if (CG.settings.oneTap || this.sel === id) { this.playCard(0, c); return; }
+      this.sel = id;
+      this.render();
+    },
+    render: function () {
+      var S = this.S, W = CG.W(), H = CG.H(), h = '', self = this;
+      var hand = S.hands[0], n = Math.max(hand.length, 1), step = 0.7;
+      var cw1 = Math.min(W / (1 + step * (n - 1)), (H * 0.32) / (1.4 * 1.22));
+      var per2 = Math.ceil(n / 2);
+      var cw2 = n > 6 ? Math.min(W / (1 + step * (per2 - 1)), (H * 0.44) / (1.4 * 1.5 + 1.4 * 0.22)) : 0;
+      var rows = cw2 > cw1 * 1.1 ? 2 : 1;
+      var cw = Math.floor(Math.min(rows === 2 ? cw2 : cw1, 150));
+      var ch = cw * 1.4, lift = Math.round(ch * 0.22);
+      var handTop = Math.round(H - (rows === 2 ? ch * 1.5 : ch));
+      var legal = S.phase === 'play' && S.turn === 0 && S.trick.length < 4 ? this.legal(S, 0) : null;
+      var ok = {};
+      if (legal) legal.forEach(function (c) { ok[c.id] = 1; });
+      var rowsArr = rows === 2 ? [hand.slice(0, per2), hand.slice(per2)] : [hand];
+      rowsArr.forEach(function (row, r) {
+        var m = row.length, st = m > 1 ? Math.min(cw * 0.8, (W - cw) / (m - 1)) : 0, x0 = (W - (cw + st * (m - 1))) / 2;
+        row.forEach(function (c, k) {
+          var raised = self.sel === c.id || self.passSel.indexOf(c.id) >= 0;
+          h += CG.card(c, x0 + k * st, handTop + r * ch * 0.5 - (raised ? lift : 0), {
+            act: 'hand', data: { id: c.id }, w: cw, z: 10 + r * 20 + k, sel: raised,
+            dim: legal && !ok[c.id], hint: !raised && S.received && S.received.indexOf(c.id) >= 0
+          });
+        });
+      });
+      var tableBottom = handTop - lift - 8;
+      var lblW = Math.round(Math.min(210, W * 0.22)), lblH = 92;
+      var topY = lblH + 8, availT = tableBottom - topY;
+      var cwT = Math.floor(Math.max(40, Math.min(cw, availT / 2.15 / 1.4, (W - 2 * lblW - 24) / 2.8)));
+      var chT = cwT * 1.4, cx = W / 2, cy = topY + availT / 2;
+      var pos = [[cx - cwT / 2, cy + chT * 0.05], [cx - cwT * 1.4, cy - chT / 2], [cx - cwT / 2, cy - chT * 1.05], [cx + cwT * 0.4, cy - chT / 2]];
+      var showWin = S.trick.length === 4;
+      S.trick.forEach(function (t, k) {
+        h += CG.card(t.c, pos[t.p][0], pos[t.p][1], { w: cwT, z: 5 + k, cls: showWin && S.winner === t.p ? 'win' : '' });
+      });
+      var midY = Math.round(cy - lblH / 2);
+      var lp = [null, [0, midY], [Math.round(cx - lblW / 2), 0], [W - lblW, midY]];
+      var active = S.phase === 'play' ? (showWin ? S.winner : S.turn) : S.phase === 'bid' ? S.bidTurn : -1;
+      for (var p = 1; p < 4; p++)
+        h += '<div class="lbl' + (active === p ? ' turn' : '') + '" style="left:' + lp[p][0] + 'px;top:' + lp[p][1] + 'px;width:' + lblW + 'px;min-height:' + lblH + 'px"><b>' +
+          this.names[p] + '</b>' + this.seatInfo(S, p) + '</div>';
+      if (this.panel) h += this.panel(S, { x: lblW + 12, y: topY, w: W - 2 * lblW - 24, h: availT, W: W, cx: cx, cy: cy });
+      CG.paint(h);
+      CG.status(this.statusText(S), '<button class="bigbtn" data-act="scores">Scores</button>');
+      CG.save(this);
+    },
+    statusText: function (S) {
+      if (S.over) return 'Game over.';
+      if (S.phase === 'handEnd') return 'Hand over.';
+      if (S.phase === 'play') {
+        if (S.trick.length === 4) return (S.winner === 0 ? 'You take' : this.names[S.winner] + ' takes') + ' the trick.';
+        if (S.turn !== 0) return this.names[S.turn] + ' is playing&hellip;';
+        if (this.sel != null) return 'Tap the raised card again to play it.';
+        if (!S.trick.length) return 'Your turn. Lead any bright card.';
+        var led = S.trick[0].c.s;
+        return 'Your turn. ' + (hasCard(S.hands[0], function (c) { return c.s === led; }) ? 'Play a ' + suitWord(led) + '.' : 'You have no ' + CG.SUIT_NAMES[led] + ', so play any card.');
+      }
+      return this.phaseText ? this.phaseText(S) : '';
+    }
+  };
+  function makeGame(g) {
+    for (var k in TB) if (!g[k]) g[k] = TB[k];
+    g.sel = null;
+    g.passSel = [];
+    CG.register(g);
+    return g;
+  }
+  function trickWinnerLed(trick, trump) {
+    var best = trick[0];
+    for (var i = 1; i < trick.length; i++) {
+      var t = trick[i], b = best.c, c = t.c;
+      if (trump && c.s === trump && b.s !== trump) best = t;
+      else if (c.s === b.s && hv(c) > hv(b)) best = t;
+    }
+    return best.p;
+  }
+
+  /* ================= HEARTS ================= */
+  var HE = makeGame({
+    id: 'hearts', name: 'Hearts', group: 'vs',
+    blurb: 'Dodge the hearts and the Queen of Spades. Low score wins.',
+    emblem: [{ r: 12, s: 's' }, { r: 1, s: 'h' }, { r: 2, s: 'c' }],
+    names: ['You', 'West', 'North', 'East'],
+    suitOrder: 'cdsh',
+    rules:
+      '<p>You play against three computer players. <b>Low score wins.</b> The game ends when someone reaches 100 points.</p>' +
+      '<h4>Points</h4><ul><li>Each heart you take is 1 point.</li><li>The Queen of Spades is 13 points.</li>' +
+      '<li><b>Shooting the moon:</b> take all the hearts and the Queen, and everyone else gets 26 points instead.</li></ul>' +
+      '<h4>Playing</h4><ul><li>Before each hand you pass 3 cards: to the left, then right, then across, then no pass.</li>' +
+      '<li>The player with the 2 of Clubs starts.</li><li>You must play the same suit that was led if you can.</li>' +
+      '<li>Highest card of the suit that was led wins the trick.</li><li>You can’t lead hearts until a heart has been played.</li>' +
+      '<li>No hearts or Queen of Spades on the very first trick.</li></ul>' +
+      '<p>Cards you can play are bright. Cards you can’t play are darker. Tap a card to raise it, then tap it again to play.</p>',
+    initState: function () {
+      return { scores: [0, 0, 0, 0], handNo: 0, over: false, phase: 'pass' };
+    },
+    startHand: function () {
+      var S = this.S;
+      this.dealCards();
+      S.points = [0, 0, 0, 0];
+      S.broken = false;
+      S.qPlayed = false;
+      S.dir = S.handNo % 4;
+      if (S.dir === 3) return this.startPlay();
+      S.phase = 'pass';
+      if (CG.autoplay) return this.doPass();
+      this.render();
+    },
+    passTarget: function (p) { return (p + [1, 3, 2][this.S.dir]) % 4; },
+    startPlay: function () {
+      var S = this.S;
+      S.phase = 'play';
+      for (var p = 0; p < 4; p++) if (hasCard(S.hands[p], function (c) { return c.s === 'c' && c.r === 2; })) S.leader = S.turn = p;
+      this.advance();
+    },
+    togglePass: function (id) {
+      var i = this.passSel.indexOf(id);
+      if (i >= 0) this.passSel.splice(i, 1);
+      else if (this.passSel.length < 3) this.passSel.push(id);
+      else CG.toast('You have picked 3 cards. Tap one to put it back.');
+      this.render();
+    },
+    aiPassPick: function (hand) {
+      var cnt = { s: 0, h: 0, d: 0, c: 0 };
+      hand.forEach(function (c) { cnt[c.s]++; });
+      function danger(c) {
+        var v = hv(c);
+        if (isQS(c)) return 100;
+        if (c.s === 's' && v > 12) return cnt.s >= 5 ? 20 : 90;
+        if (c.s === 'h') return 40 + v;
+        if (c.s === 's') return v - 10;
+        return v + (cnt[c.s] <= 2 ? 8 : 0);
+      }
+      return hand.slice().sort(function (a, b) { return danger(b) - danger(a); }).slice(0, 3).map(function (c) { return c.id; });
+    },
+    doPass: function () {
+      var S = this.S, picks = [], p, self = this;
+      for (p = 0; p < 4; p++) picks.push(p === 0 && !CG.autoplay ? this.passSel.slice() : this.aiPassPick(S.hands[p]));
+      var moving = [];
+      for (p = 0; p < 4; p++) {
+        moving.push(picks[p].map(function (id) { return S.hands[p].splice(CG.byId(S.hands[p], id), 1)[0]; }));
+      }
+      for (p = 0; p < 4; p++) {
+        var to = this.passTarget(p);
+        moving[p].forEach(function (c) { S.hands[to].push(c); });
+        this.sortHand(S.hands[to]);
+      }
+      var from = [0, 1, 2, 3].filter(function (q) { return self.passTarget(q) === 0; })[0];
+      S.received = moving[from].map(function (c) { return c.id; });
+      this.passSel = [];
+      CG.toast('You got 3 cards from ' + this.names[from] + '. They are glowing blue.', 3200);
+      this.startPlay();
+    },
+    actExtra: function (a) {
+      if (a === 'pass' && this.S.phase === 'pass') {
+        if (this.passSel.length !== 3) { CG.toast('Pick 3 cards to pass.'); return; }
+        this.doPass();
+      }
+    },
+    panel: function (S, b) {
+      if (S.phase !== 'pass') return '';
+      var dirName = ['West (left)', 'East (right)', 'North (across)'][S.dir];
+      return '<div class="panel" style="left:' + b.x + 'px;top:' + Math.round(b.cy - 80) + 'px;width:' + b.w + 'px">' +
+        '<h3>Pick 3 cards to pass to ' + dirName + '</h3>' +
+        '<button class="bigbtn primary" data-act="pass"' + (this.passSel.length === 3 ? '' : ' disabled') + '>Pass ' + this.passSel.length + ' of 3 cards</button></div>';
+    },
+    phaseText: function (S) {
+      if (S.phase === 'pass') return 'Tap 3 cards you want to get rid of.';
+      return '';
+    },
+    legal: function (S, p) {
+      var hand = S.hands[p];
+      if (!S.trick.length) {
+        if (S.trickNo === 0) {
+          var two = hasCard(hand, function (c) { return c.s === 'c' && c.r === 2; });
+          if (two) return [two];
+        }
+        if (!S.broken) {
+          var non = hand.filter(function (c) { return c.s !== 'h'; });
+          if (non.length) return non;
+        }
+        return hand.slice();
+      }
+      var led = S.trick[0].c.s;
+      var f = hand.filter(function (c) { return c.s === led; });
+      if (f.length) return f;
+      if (S.trickNo === 0) {
+        var safe = hand.filter(function (c) { return c.s !== 'h' && !isQS(c); });
+        if (safe.length) return safe;
+      }
+      return hand.slice();
+    },
+    whyNot: function (S, c) {
+      if (!S.trick.length) {
+        if (S.trickNo === 0) return 'The 2 of Clubs must start the first trick.';
+        return 'You can’t lead hearts until a heart has been played.';
+      }
+      var led = S.trick[0].c.s;
+      if (c.s !== led && hasCard(S.hands[0], function (x) { return x.s === led; })) return 'You have to play a ' + suitWord(led) + '.';
+      return 'No hearts or Queen of Spades on the first trick.';
+    },
+    onPlay: function (c) {
+      if (c.s === 'h') this.S.broken = true;
+      if (isQS(c)) this.S.qPlayed = true;
+    },
+    winner: function (trick) { return trickWinnerLed(trick, null); },
+    onCollect: function (w, cards) {
+      var pts = 0;
+      cards.forEach(function (c) { if (c.s === 'h') pts++; if (isQS(c)) pts += 13; });
+      this.S.points[w] += pts;
+    },
+    seatInfo: function (S, p) {
+      return 'Cards: ' + S.hands[p].length + '<br>Points: ' + (S.points ? S.points[p] : 0);
+    },
+    statusText: function (S) {
+      var base = TB.statusText.call(this, S);
+      return base + (S.points ? ' <span style="color:var(--ink-dim)">&middot; Your points: ' + S.points[0] + '</span>' : '');
+    },
+    scoreTable: function () {
+      var S = this.S, h = '<table class="sc"><tr><th>Player</th><th>This hand</th><th>Total</th></tr>';
+      for (var p = 0; p < 4; p++) h += '<tr><td>' + this.names[p] + '</td><td>' + (S.points ? S.points[p] : 0) + '</td><td>' + S.scores[p] + '</td></tr>';
+      return h + '</table><p>The game ends when someone reaches 100. Lowest score wins.</p>';
+    },
+    endHand: function () {
+      var S = this.S, pts = S.points.slice(), moon = pts.indexOf(26), p, note = '';
+      if (moon >= 0) {
+        for (p = 0; p < 4; p++) pts[p] = p === moon ? 0 : 26;
+        note = '<p><b>' + (moon === 0 ? 'You' : this.names[moon]) + ' shot the moon!</b> Everyone else gets 26 points.</p>';
+      }
+      for (p = 0; p < 4; p++) S.scores[p] += pts[p];
+      var body = note + '<table class="sc"><tr><th>Player</th><th>This hand</th><th>Total</th></tr>';
+      for (p = 0; p < 4; p++) body += '<tr><td>' + this.names[p] + '</td><td>' + pts[p] + '</td><td>' + S.scores[p] + '</td></tr>';
+      body += '</table>';
+      S.handNo++;
+      var max = Math.max.apply(null, S.scores), title = 'Hand finished', over = false;
+      if (max >= 100) {
+        over = true;
+        var min = Math.min.apply(null, S.scores);
+        if (S.scores[0] === min) { title = 'You won the game!'; CG.addWin(this.id); }
+        else title = this.names[S.scores.indexOf(min)] + ' wins the game';
+        body += '<p>Someone reached 100, so the game is over. Lowest score wins.</p>';
+      }
+      this.finishHand(title, body, over);
+    },
+    aiPlay: function (p) {
+      var S = this.S, hand = S.hands[p], legal = this.legal(S, p);
+      if (legal.length === 1) return legal[0];
+      var hi = byHigh(legal), qOut = S.qPlayed, hasQ = !!hasCard(hand, isQS);
+      if (!S.trick.length) {
+        var best = null, bs = 1e9;
+        legal.forEach(function (c) {
+          var n = hand.filter(function (x) { return x.s === c.s; }).length;
+          var sc = hv(c) * 2 + n;
+          if (c.s === 'h') sc += 12;
+          if (c.s === 's' && !qOut && hv(c) >= 12) sc += 40;
+          if (c.s === 's' && hv(c) < 12 && !qOut && !hasQ) sc -= 6;
+          if (sc < bs) { bs = sc; best = c; }
+        });
+        return best;
+      }
+      var led = S.trick[0].c.s, w = S.trick[this.trickPos(S.trick, trickWinnerLed(S.trick, null))].c;
+      var pts = 0;
+      S.trick.forEach(function (t) { if (t.c.s === 'h') pts++; if (isQS(t.c)) pts += 13; });
+      var last = S.trick.length === 3;
+      var nonQ = hi.filter(function (c) { return !isQS(c); });
+      if (legal[0].s === led) {
+        var q = hasCard(legal, isQS);
+        if (led === 's' && q && S.trick.some(function (t) { return t.c.s === 's' && hv(t.c) > 12; })) return q;
+        if (last && pts === 0) return nonQ.length ? nonQ[0] : hi[0];
+        var under = hi.filter(function (c) { return hv(c) < hv(w); });
+        if (under.length) return under[0];
+        if (led === 's' && !qOut) return byLow(legal)[0];
+        return nonQ.length ? nonQ[0] : hi[0];
+      }
+      var qs = hasCard(legal, isQS);
+      if (qs) return qs;
+      if (!qOut) {
+        var big = hasCard(hi, function (c) { return c.s === 's' && hv(c) > 12; });
+        if (big) return big;
+      }
+      var heart = hasCard(hi, function (c) { return c.s === 'h'; });
+      if (heart) return heart;
+      return hi[0];
+    },
+    trickPos: function (trick, p) {
+      for (var i = 0; i < trick.length; i++) if (trick[i].p === p) return i;
+      return 0;
+    }
+  });
+
+  /* ================= SPADES ================= */
+  function estimateTricks(hand) {
+    var est = 0, by = { s: [], h: [], d: [], c: [] };
+    hand.forEach(function (c) { by[c.s].push(hv(c)); });
+    ['h', 'd', 'c'].forEach(function (s) {
+      var v = by[s], n = v.length, A = v.indexOf(14) >= 0, K = v.indexOf(13) >= 0;
+      if (A) est += n <= 5 ? 1 : 0.7;
+      if (K) est += n >= 2 ? (A ? 0.9 : 0.55) : 0.1;
+      if (v.indexOf(12) >= 0 && n >= 3 && (A || K)) est += 0.25;
+    });
+    var sp = by.s, ns = sp.length;
+    if (sp.indexOf(14) >= 0) est += 1;
+    if (sp.indexOf(13) >= 0) est += ns >= 2 ? 0.9 : 0.4;
+    if (sp.indexOf(12) >= 0) est += ns >= 3 ? 0.6 : 0.2;
+    if (ns > 3) est += (ns - 3) * 0.8;
+    var spare = Math.max(0, ns - 2);
+    ['h', 'd', 'c'].forEach(function (s) {
+      var n = by[s].length;
+      if (spare > 0 && n === 0) { est += 0.8; spare--; } else if (spare > 0 && n === 1) { est += 0.4; spare--; }
+    });
+    return est;
+  }
+  var SPD = makeGame({
+    id: 'spades', name: 'Spades', group: 'vs',
+    blurb: 'Team up with your partner. Bid your tricks, then make them.',
+    emblem: [{ r: 1, s: 's' }, { r: 13, s: 's' }, { r: 2, s: 's' }],
+    names: ['You', 'West', 'North', 'East'],
+    suitOrder: 'dchs',
+    rules:
+      '<p>You and <b>North</b> (across the table) are partners against West and East. First team to <b>500 points</b> wins.</p>' +
+      '<h4>Bidding</h4><ul><li>Look at your cards and guess how many tricks you will win. The game suggests a number.</li>' +
+      '<li>Your bid and your partner’s bid add up to your team’s goal.</li><li><b>Nil</b> means you promise to win no tricks at all: 100 points if you do it, minus 100 if you don’t.</li></ul>' +
+      '<h4>Playing</h4><ul><li>Play the same suit that was led if you can.</li><li>Spades are trumps: any spade beats any other suit.</li>' +
+      '<li>Highest spade wins, or if no spades were played, the highest card of the suit that was led.</li>' +
+      '<li>You can’t lead spades until a spade has been played.</li></ul>' +
+      '<h4>Scoring</h4><ul><li>Make your team’s goal: 10 points per trick bid, plus 1 point for each extra trick.</li>' +
+      '<li>Miss it: lose 10 points per trick bid.</li><li>Every 10 extra tricks (called bags) costs 100 points.</li></ul>',
+    initState: function () {
+      return { scores: [0, 0], bags: [0, 0], dealer: 3, over: false, phase: 'bid', bids: [null, null, null, null] };
+    },
+    startHand: function () {
+      var S = this.S;
+      this.dealCards();
+      S.dealer = (S.dealer + 1) % 4;
+      S.bids = [null, null, null, null];
+      S.bidTurn = (S.dealer + 1) % 4;
+      S.broken = false;
+      S.phase = 'bid';
+      this.advance();
+    },
+    advancePhase: function () {
+      var S = this.S, self = this;
+      if (S.phase !== 'bid') return this.render();
+      if (S.bids[S.bidTurn] != null) {
+        S.phase = 'play';
+        S.leader = S.turn = (S.dealer + 1) % 4;
+        return this.advance();
+      }
+      this.render();
+      if (S.bidTurn === 0 && !CG.autoplay) return;
+      CG.later(function () {
+        if (S !== self.S || S.phase !== 'bid') return;
+        self.makeBid(S.bidTurn, Math.min(13, Math.max(1, Math.round(estimateTricks(S.hands[S.bidTurn])))));
+      }, CG.wait(900));
+    },
+    makeBid: function (p, n) {
+      var S = this.S;
+      S.bids[p] = n;
+      S.bidTurn = (p + 1) % 4;
+      this.advance();
+    },
+    actExtra: function (a, d) {
+      var S = this.S;
+      if (a === 'bid' && S.phase === 'bid' && S.bidTurn === 0) this.makeBid(0, +d.n);
+    },
+    panel: function (S, b) {
+      if (S.phase !== 'bid' || S.bidTurn !== 0) return '';
+      var sug = Math.min(13, Math.max(1, Math.round(estimateTricks(S.hands[0]))));
+      var w = b.w >= 470 ? b.w : Math.min(b.W - 20, 600);
+      var h = '<div class="panel" style="left:' + Math.round((b.W - w) / 2) + 'px;top:' + b.y + 'px;width:' + w + 'px;z-index:40;background:rgba(0,0,0,0.55);border-radius:18px;padding:12px 0">' +
+        '<h3>How many tricks will you win?</h3><div style="font-size:21px;margin:-4px 0 8px">Suggested bid: <b style="color:var(--gold)">' + sug + '</b>' +
+        (S.bids[2] != null ? ' &middot; Partner bid ' + (S.bids[2] === 0 ? 'Nil' : S.bids[2]) : '') + '</div><div class="bidgrid">';
+      for (var n = 0; n <= 13; n++)
+        h += '<button class="bigbtn' + (n === sug ? ' primary' : '') + (n === 0 ? ' wide' : '') + '" data-act="bid" data-n="' + n + '">' + (n === 0 ? 'Nil' : n) + '</button>';
+      return h + '</div></div>';
+    },
+    phaseText: function (S) {
+      if (S.phase === 'bid') return S.bidTurn === 0 ? 'Your bid. How many tricks do you think you can win?' : this.names[S.bidTurn] + ' is bidding&hellip;';
+      return '';
+    },
+    statusText: function (S) {
+      var base = TB.statusText.call(this, S);
+      if (S.phase === 'play' || S.phase === 'handEnd') {
+        var bid = (S.bids[0] || 0) + (S.bids[2] || 0), won = S.tricks[0] + S.tricks[2];
+        base += ' <span style="color:var(--ink-dim)">&middot; Team: ' + won + ' of ' + bid + '</span>';
+      }
+      return base;
+    },
+    seatInfo: function (S, p) {
+      var bid = S.bids[p] == null ? '&ndash;' : S.bids[p] === 0 ? 'Nil' : S.bids[p];
+      return (p === 2 ? '<span style="color:var(--gold)">Your partner</span><br>' : '') + 'Bid ' + bid + ' &middot; Won ' + S.tricks[p];
+    },
+    legal: function (S, p) {
+      var hand = S.hands[p];
+      if (!S.trick.length) {
+        if (!S.broken) {
+          var non = hand.filter(function (c) { return c.s !== 's'; });
+          if (non.length) return non;
+        }
+        return hand.slice();
+      }
+      var led = S.trick[0].c.s, f = hand.filter(function (c) { return c.s === led; });
+      return f.length ? f : hand.slice();
+    },
+    whyNot: function (S, c) {
+      if (!S.trick.length) return 'You can’t lead spades until a spade has been played.';
+      return 'You have to play a ' + suitWord(S.trick[0].c.s) + '.';
+    },
+    onPlay: function (c) { if (c.s === 's') this.S.broken = true; },
+    winner: function (trick) { return trickWinnerLed(trick, 's'); },
+    onCollect: function () {},
+    scoreTable: function () {
+      var S = this.S;
+      return '<table class="sc"><tr><th>Team</th><th>Score</th><th>Bags</th></tr>' +
+        '<tr><td>You &amp; North</td><td>' + S.scores[0] + '</td><td>' + S.bags[0] + '</td></tr>' +
+        '<tr><td>West &amp; East</td><td>' + S.scores[1] + '</td><td>' + S.bags[1] + '</td></tr></table><p>First team to 500 wins.</p>';
+    },
+    endHand: function () {
+      var S = this.S, rows = [], t;
+      for (t = 0; t < 2; t++) {
+        var bid = 0, tr = 0, nilPts = 0, bags = 0, nilNote = [];
+        [t, t + 2].forEach(function (p) {
+          if (S.bids[p] === 0) {
+            nilPts += S.tricks[p] === 0 ? 100 : -100;
+            bags += S.tricks[p];
+            nilNote.push(S.tricks[p] === 0 ? 'Nil made' : 'Nil missed');
+          } else { bid += S.bids[p]; tr += S.tricks[p]; }
+        });
+        var sc = nilPts, made = tr >= bid;
+        if (bid > 0) {
+          if (made) { sc += 10 * bid; bags += tr - bid; } else sc -= 10 * bid;
+        }
+        sc += bags;
+        S.bags[t] += bags;
+        var pen = 0;
+        while (S.bags[t] >= 10) { S.bags[t] -= 10; pen += 100; }
+        sc -= pen;
+        S.scores[t] += sc;
+        rows.push({ bid: bid, tr: tr + (S.bids[t] === 0 ? S.tricks[t] : 0) + (S.bids[t + 2] === 0 ? S.tricks[t + 2] : 0), sc: sc, made: made || bid === 0, pen: pen, nil: nilNote.join(', ') });
+      }
+      var names = ['You &amp; North', 'West &amp; East'];
+      var body = '<table class="sc"><tr><th>Team</th><th>Bid</th><th>Won</th><th>Hand</th><th>Total</th></tr>';
+      for (t = 0; t < 2; t++)
+        body += '<tr><td>' + names[t] + '</td><td>' + rows[t].bid + '</td><td>' + rows[t].tr + '</td><td>' + (rows[t].sc > 0 ? '+' : '') + rows[t].sc + '</td><td>' + S.scores[t] + '</td></tr>';
+      body += '</table>';
+      for (t = 0; t < 2; t++) {
+        var notes = [];
+        if (!rows[t].made) notes.push('missed their bid');
+        if (rows[t].nil) notes.push(rows[t].nil.toLowerCase());
+        if (rows[t].pen) notes.push('lost 100 for 10 bags');
+        if (notes.length) body += '<p>' + names[t] + ': ' + notes.join(', ') + '.</p>';
+      }
+      var a = S.scores[0], b = S.scores[1], over = false, title = 'Hand finished';
+      if (((a >= 500 || b >= 500) && a !== b) || a <= -200 || b <= -200) {
+        over = true;
+        var youWin = a <= -200 ? false : b <= -200 ? true : a > b;
+        title = youWin ? 'You and North win!' : 'West and East win';
+        if (youWin) CG.addWin(this.id);
+      }
+      this.finishHand(title, body, over);
+    },
+    aiPlay: function (p) {
+      var S = this.S, legal = this.legal(S, p);
+      if (legal.length === 1) return legal[0];
+      var partner = (p + 2) % 4;
+      var bid = (S.bids[p] || 0) + (S.bids[partner] || 0), won = S.tricks[p] + S.tricks[partner];
+      var need = won < bid, myNil = S.bids[p] === 0;
+      var partnerNil = S.bids[partner] === 0 && S.tricks[partner] === 0;
+      function key(c) { return (c.s === 's' ? 100 : 0) + hv(c); }
+      function low(a) { return a.slice().sort(function (x, y) { return key(x) - key(y); })[0]; }
+      function high(a) { return a.slice().sort(function (x, y) { return key(y) - key(x); })[0]; }
+      if (!S.trick.length) {
+        var nonS = legal.filter(function (c) { return c.s !== 's'; });
+        if (myNil) return low(legal);
+        if (need || partnerNil) {
+          var ace = hasCard(nonS, function (c) { return c.r === 1; });
+          if (ace) return ace;
+          var sp = legal.filter(function (c) { return c.s === 's'; });
+          if (S.broken && sp.length && hv(high(sp)) >= 13) return high(sp);
+        }
+        var pool = nonS.length ? nonS : legal, cnt = {};
+        pool.forEach(function (c) { cnt[c.s] = (cnt[c.s] || 0) + 1; });
+        var bestS = null;
+        for (var s in cnt) if (!bestS || cnt[s] > cnt[bestS]) bestS = s;
+        return low(pool.filter(function (c) { return c.s === bestS; }));
+      }
+      var led = S.trick[0].c.s, wp = trickWinnerLed(S.trick, 's'), wc = null;
+      S.trick.forEach(function (t) { if (t.p === wp) wc = t.c; });
+      function beats(c) { return c.s === wc.s ? hv(c) > hv(wc) : c.s === 's'; }
+      var winners = legal.filter(beats), losers = legal.filter(function (c) { return !beats(c); });
+      var last = S.trick.length === 3, partnerWinning = wp === partner;
+      var partnerPlayed = S.trick.some(function (t) { return t.p === partner; });
+      if (myNil) return losers.length ? high(losers) : low(winners);
+      if (partnerNil && (!partnerPlayed || partnerWinning)) {
+        if (winners.length) return last ? low(winners) : high(winners);
+        return low(losers);
+      }
+      if (need && !partnerWinning) {
+        if (winners.length) {
+          if (last) return low(winners);
+          var follow = winners.filter(function (c) { return c.s === led; });
+          return follow.length ? high(follow) : low(winners);
+        }
+        return low(losers);
+      }
+      if (losers.length) return partnerWinning ? low(losers) : high(losers);
+      return low(winners);
+    }
+  });
+  CG.estimateSpades = estimateTricks;
+  void HE; void SPD;
+})();
+
+/* Canasta for two: you against the computer. */
+(function () {
+  'use strict';
+  var CG = window.CG;
+
+  function isWild(c) { return c.s === 'j' || c.r === 2; }
+  function isRed3(c) { return c.r === 3 && (c.s === 'h' || c.s === 'd'); }
+  function isBlack3(c) { return c.r === 3 && (c.s === 's' || c.s === 'c'); }
+  function val(c) {
+    if (c.s === 'j') return 50;
+    if (c.r === 2 || c.r === 1) return 20;
+    if (c.r >= 8) return 10;
+    if (c.r === 3) return isRed3(c) ? 100 : 5;
+    return 5;
+  }
+  function sum(cards) { var s = 0; cards.forEach(function (c) { s += val(c); }); return s; }
+  function minMeld(score) { return score < 0 ? 15 : score < 1500 ? 50 : score < 3000 ? 90 : 120; }
+  function rankOrder(c) { if (c.s === 'j') return 100; if (c.r === 2) return 99; if (c.r === 1) return 14; return c.r; }
+  function sortHand(h) {
+    h.sort(function (a, b) { return rankOrder(a) - rankOrder(b) || (a.s < b.s ? -1 : a.s > b.s ? 1 : 0); });
+  }
+  function meldOrder(r) { return r === 1 ? 14 : r; }
+  function wildCount(m) { return m.cards.filter(isWild).length; }
+  function rankName(r, plural) {
+    var n = r === 1 ? 'Ace' : r === 11 ? 'Jack' : r === 12 ? 'Queen' : r === 13 ? 'King' : String(r);
+    return plural ? n + 's' : n;
+  }
+
+  var CA = {
+    id: 'canasta', name: 'Canasta', group: 'vs',
+    blurb: 'Meld cards of the same rank and build canastas of seven.',
+    emblem: [{ r: 0, s: 'j' }, { r: 13, s: 'h' }, { r: 13, s: 'c' }],
+    tools: [],
+    rules:
+      '<p>Two-player Canasta against the computer, with two decks and four Jokers. The first to the goal score (5000, or 2500 for a short game) wins.</p>' +
+      '<h4>Your turn</h4><ul><li><b>Draw:</b> tap the deck to take 2 cards, <i>or</i> take the whole discard pile (see below).</li>' +
+      '<li><b>Meld:</b> pick 3 or more cards of the same rank and tap <b>Meld</b>. To add cards to a meld you already have, pick them and tap that meld.</li>' +
+      '<li><b>Discard:</b> pick 1 card and tap <b>Discard</b> to end your turn.</li></ul>' +
+      '<h4>Melds</h4><ul><li>A meld needs at least 2 natural cards and can have up to 3 wild cards. Jokers and 2s are wild.</li>' +
+      '<li>A meld of 7 cards is a <b>canasta</b>: 500 points if it has no wild cards (natural, shown red), 300 if it has some (mixed, shown black).</li>' +
+      '<li>Your first meld of each hand must be worth enough points: 50 at the start, more as your score grows. The game shows how many.</li></ul>' +
+      '<h4>Card points</h4><ul><li>Joker 50. Ace and 2: 20. King to 8: 10. 7 to 4 and black 3: 5.</li>' +
+      '<li>Red 3s are put aside on their own and are worth 100 each (800 for all four).</li></ul>' +
+      '<h4>Taking the discard pile</h4><ul><li>Pick cards from your hand that make a meld with the top card, then tap the pile. You get the whole pile.</li>' +
+      '<li>Before your first meld, or when the pile is <b>frozen</b> (a wild card was thrown on it), you need two natural cards that match the top card.</li>' +
+      '<li>A black 3 or a wild card on top blocks the pile for that turn.</li></ul>' +
+      '<h4>Going out</h4><ul><li>You need <b>2 canastas</b> to go out. Then meld all your cards (or meld all but one and discard it). Going out is worth 100.</li>' +
+      '<li>When a hand ends, cards left in your hand count against you.</li></ul>'
+  };
+
+  CA.newGame = function (first) {
+    var self = this, pref = CG.store.get('canasta_target', 5000);
+    if (first) return this.startGame(pref);
+    var b = [
+      { label: 'Play to 5000 (standard)', primary: pref === 5000, fn: function () { self.startGame(5000); } },
+      { label: 'Play to 2500 (shorter)', primary: pref === 2500, fn: function () { self.startGame(2500); } }
+    ];
+    if (this.S && !this.S.over) b.push({ label: 'Keep playing' });
+    CG.dialog({ title: 'New game of Canasta', body: '<p>How long a game would you like?</p>', buttons: b });
+  };
+  CA.startGame = function (target) {
+    CG.store.set('canasta_target', target);
+    CG.clearTimers();
+    this.S = { scores: [0, 0], target: target, handNo: 0, over: false };
+    this.startHand();
+  };
+  CA.drawOne = function (p) {
+    var S = this.S;
+    while (S.stock.length) {
+      var c = S.stock.pop();
+      if (isRed3(c)) { S.red3[p].push(c); continue; }
+      S.hands[p].push(c);
+      return c;
+    }
+    return null;
+  };
+  CA.startHand = function () {
+    var S = this.S, p, i;
+    S.stock = CG.shuffle(CG.deck(2, 4));
+    S.pile = []; S.hands = [[], []]; S.melds = [[], []]; S.red3 = [[], []];
+    S.frozen = false; S.newIds = []; S.summary = null; S.msg = '';
+    for (i = 0; i < 15; i++) for (p = 0; p < 2; p++) S.hands[p].push(S.stock.pop());
+    for (p = 0; p < 2; p++) {
+      var H = S.hands[p];
+      for (i = H.length - 1; i >= 0; i--) if (isRed3(H[i])) { S.red3[p].push(H.splice(i, 1)[0]); }
+      while (H.length < 15) this.drawOne(p);
+      sortHand(H);
+    }
+    var up = S.stock.pop();
+    S.pile.push(up);
+    while (isWild(up) || isRed3(up)) {
+      if (isWild(up)) S.frozen = true;
+      up = S.stock.pop();
+      S.pile.push(up);
+    }
+    S.turn = S.handNo % 2;
+    S.handNo++;
+    this.sel = [];
+    S.msg = S.turn === 0 ? 'New hand. You go first.' : 'New hand. The computer goes first.';
+    this.beginTurn();
+  };
+  CA.beginTurn = function () {
+    var S = this.S, self = this;
+    S.phase = 'draw';
+    S.aiStep = 1;
+    S.startMelds = S.melds[S.turn].length;
+    if (!S.stock.length) { S.msg = 'The deck has run out.'; return this.endHand(-1); }
+    this.render();
+    if (S.turn === 1 || CG.autoplay) CG.later(function () { if (S === self.S) self.aiRun(); }, CG.wait(1200));
+  };
+  CA.nextTurn = function () {
+    this.S.turn = 1 - this.S.turn;
+    this.sel = [];
+    this.beginTurn();
+  };
+  CA.findMeld = function (p, r) {
+    var M = this.S.melds[p];
+    for (var i = 0; i < M.length; i++) if (M[i].r === r) return M[i];
+    return null;
+  };
+  CA.canastas = function (p) {
+    return this.S.melds[p].filter(function (m) { return m.cards.length >= 7; }).length;
+  };
+
+  /* Work out how a set of cards would be melded. Returns {err} or a plan. */
+  CA.plan = function (p, cards, top, targetRank) {
+    var S = this.S, self = this, all = cards.slice(), nat = {}, wilds = [], ranks = [];
+    if (top) all.push(top);
+    if (!all.length) return { err: 'Pick the cards you want to meld first.' };
+    all.forEach(function (c) {
+      if (isWild(c)) wilds.push(c);
+      else {
+        if (!nat[c.r]) { nat[c.r] = []; ranks.push(c.r); }
+        nat[c.r].push(c);
+      }
+    });
+    if (targetRank != null) {
+      for (var i = 0; i < ranks.length; i++)
+        if (ranks[i] !== targetRank) return { err: 'Only ' + rankName(targetRank, true) + ' and wild cards can go on that meld.' };
+      if (!ranks.length) { ranks = [targetRank]; nat[targetRank] = []; }
+    }
+    if (!ranks.length) return { err: 'Pick some natural cards too, or tap one of your melds to add wild cards to it.' };
+    var groups = ranks.map(function (r) {
+      var ex = self.findMeld(p, r);
+      return { r: r, add: nat[r].slice(), ex: ex, n: nat[r].length + (ex ? ex.cards.length - wildCount(ex) : 0), w: ex ? wildCount(ex) : 0 };
+    });
+    var pool = wilds.slice().sort(function (a, b) { return val(b) - val(a); });
+    groups.forEach(function (g) {
+      while (g.n + g.w < 3 && g.n >= 2 && g.r !== 3 && pool.length) { g.add.push(pool.pop()); g.w++; }
+    });
+    groups.sort(function (a, b) { return b.n + b.w - (a.n + a.w); });
+    while (pool.length) {
+      var placed = false;
+      for (var k = 0; k < groups.length; k++)
+        if (groups[k].w < 3 && groups[k].r !== 3 && groups[k].n >= 2) { groups[k].add.push(pool.pop()); groups[k].w++; placed = true; break; }
+      if (!placed) return { err: 'A meld can hold at most 3 wild cards.' };
+    }
+    for (k = 0; k < groups.length; k++) {
+      var g = groups[k];
+      if (g.n < 2) return { err: 'A new meld needs at least 2 natural cards of the same rank, like two ' + rankName(g.r, true) + '.' };
+      if (g.n + g.w < 3) return { err: 'A meld needs at least 3 cards. Add one more ' + rankName(g.r) + ' or a wild card.' };
+      if (g.r === 3 && g.w) return { err: 'Black 3s can’t be melded with wild cards.' };
+    }
+    var pts = sum(all), melded = S.melds[p].length > 0;
+    if (!melded) {
+      var need = minMeld(S.scores[p]);
+      if (pts < need) return { err: 'Your first meld must be worth at least ' + need + ' points. These cards are worth ' + pts + '.', short: true };
+    }
+    var touched = groups.filter(function (x) { return x.ex; }).map(function (x) { return x.ex; });
+    var canastas = S.melds[p].filter(function (m) { return m.cards.length >= 7 && touched.indexOf(m) < 0; }).length +
+      groups.filter(function (x) { return (x.ex ? x.ex.cards.length : 0) + x.add.length >= 7; }).length;
+    var remaining = S.hands[p].length - cards.length + (top ? S.pile.length - 1 : 0);
+    var canOut = canastas >= 2;
+    if (remaining <= 1 && !canOut)
+      return { err: 'You need 2 canastas before you can go out, so keep at least 2 cards in your hand.', keep: true };
+    for (k = 0; k < groups.length; k++)
+      if (groups[k].r === 3 && !(canOut && remaining <= 1)) return { err: 'Black 3s can only be melded when you go out.' };
+    return { groups: groups, pts: pts, remaining: remaining, canOut: canOut };
+  };
+  CA.applyPlan = function (p, plan, fromHand) {
+    var S = this.S, H = S.hands[p];
+    fromHand.forEach(function (c) { var i = CG.byId(H, c.id); if (i >= 0) H.splice(i, 1); });
+    plan.groups.forEach(function (g) {
+      if (g.ex) g.add.forEach(function (c) { g.ex.cards.push(c); });
+      else S.melds[p].push({ r: g.r, cards: g.add.slice() });
+    });
+    S.melds[p].sort(function (a, b) { return meldOrder(a.r) - meldOrder(b.r); });
+  };
+  CA.checkTake = function (p, sel) {
+    var S = this.S, top = S.pile[S.pile.length - 1];
+    if (!top) return { err: 'The discard pile is empty.' };
+    if (isBlack3(top)) return { err: 'A black 3 is on top, so the pile can’t be taken this turn.' };
+    if (isWild(top)) return { err: 'A wild card is on top, so the pile can’t be taken this turn.' };
+    var frozen = S.frozen || !S.melds[p].length;
+    var match = sel.filter(function (c) { return !isWild(c) && c.r === top.r; }).length;
+    if (frozen && match < 2) {
+      return { err: (S.frozen ? 'The pile is frozen. ' : 'Before your first meld, ') + 'you need two natural ' + rankName(top.r, true) +
+        ' from your hand to take it. Pick them first, then tap the pile.' };
+    }
+    if (!frozen && match < 1 && !this.findMeld(p, top.r))
+      return { err: 'To take the pile, pick cards from your hand that go with the top card (' + rankName(top.r) + '), then tap the pile.' };
+    return this.plan(p, sel, top);
+  };
+  CA.doTake = function (p, sel, plan) {
+    var S = this.S, top = S.pile.pop(), self = this;
+    void top;
+    this.applyPlan(p, plan, sel);
+    var rest = S.pile;
+    S.pile = [];
+    S.newIds = [];
+    rest.forEach(function (c) {
+      if (isRed3(c)) S.red3[p].push(c);
+      else { S.hands[p].push(c); if (p === 0) S.newIds.push(c.id); }
+    });
+    S.frozen = false;
+    sortHand(S.hands[p]);
+    S.phase = 'meld';
+    if (!S.hands[p].length) { self.endHand(p); return true; }
+    return false;
+  };
+  CA.drawStock = function (p) {
+    var S = this.S, got = [];
+    var r3 = S.red3[p].length;
+    for (var k = 0; k < 2; k++) { var c = this.drawOne(p); if (c) got.push(c); }
+    S.newIds = p === 0 ? got.map(function (c) { return c.id; }) : [];
+    sortHand(S.hands[p]);
+    S.phase = 'meld';
+    return { got: got, red3: S.red3[p].length - r3 };
+  };
+  CA.discard = function (p, c) {
+    var S = this.S, H = S.hands[p], i = CG.byId(H, c.id);
+    if (i < 0) return;
+    if (H.length === 1 && this.canastas(p) < 2) {
+      CG.toast('You need 2 canastas before you can discard your last card.');
+      return;
+    }
+    H.splice(i, 1);
+    S.pile.push(c);
+    if (isWild(c)) S.frozen = true;
+    S.newIds = [];
+    S.lastDiscard = { p: p, id: c.id };
+    S.msg = (p === 0 ? 'You discarded ' : 'The computer discarded ') + CG.cardText(c) + '.' + (isWild(c) ? ' The pile is now frozen.' : '');
+    if (!H.length) return this.endHand(p);
+    this.nextTurn();
+  };
+  CA.endHand = function (outP) {
+    var S = this.S, rows = [], self = this;
+    for (var p = 0; p < 2; p++) {
+      var canN = 0, canM = 0, meldPts = 0;
+      S.melds[p].forEach(function (m) {
+        if (m.cards.length >= 7) { if (wildCount(m)) canM++; else canN++; }
+        meldPts += sum(m.cards);
+      });
+      var r3 = S.red3[p].length, r3pts = r3 === 4 ? 800 : r3 * 100;
+      if (!S.melds[p].length) r3pts = -r3pts;
+      var out = outP === p ? (S.startMelds === 0 && p === S.turn ? 200 : 100) : 0;
+      var handPts = sum(S.hands[p]);
+      var total = canN * 500 + canM * 300 + r3pts + out + meldPts - handPts;
+      S.scores[p] += total;
+      rows.push({ can: canN * 500 + canM * 300, canTxt: canN + ' natural, ' + canM + ' mixed', r3: r3pts, out: out, meld: meldPts, hand: handPts, total: total });
+    }
+    function line(label, k, neg) {
+      return '<tr><td>' + label + '</td><td>' + (neg ? '&minus;' : '') + rows[0][k] + '</td><td>' + (neg ? '&minus;' : '') + rows[1][k] + '</td></tr>';
+    }
+    var body = '<table class="sc"><tr><th></th><th>You</th><th>Computer</th></tr>' +
+      line('Canastas', 'can') + line('Red 3s', 'r3') + line('Going out', 'out') + line('Melded cards', 'meld') + line('Left in hand', 'hand', true) +
+      '<tr class="tot"><td>This hand</td><td>' + rows[0].total + '</td><td>' + rows[1].total + '</td></tr>' +
+      '<tr class="tot"><td>Game total</td><td>' + S.scores[0] + '</td><td>' + S.scores[1] + '</td></tr></table>' +
+      '<p>Goal: ' + S.target + ' points.</p>';
+    var title = outP === 0 ? 'You went out!' : outP === 1 ? 'The computer went out' : 'The deck ran out';
+    var over = false;
+    if (S.scores[0] >= S.target || S.scores[1] >= S.target) {
+      if (S.scores[0] !== S.scores[1]) {
+        over = true;
+        if (S.scores[0] > S.scores[1]) { title = 'You won the game!'; CG.addWin(self.id); } else title = 'The computer wins the game';
+      }
+    }
+    S.phase = 'handEnd';
+    S.summary = { title: title, body: body, gameOver: over };
+    if (over) S.over = true;
+    this.sel = [];
+    this.render();
+    CG.later(function () { self.showHandEnd(); }, CG.wait(900));
+  };
+  CA.showHandEnd = function () {
+    var S = this.S, self = this, sm = S.summary;
+    CG.dialog({
+      title: sm.title, body: sm.body,
+      buttons: sm.gameOver ? [
+        { label: 'Play a new game', primary: true, fn: function () { self.startGame(S.target); } },
+        { label: 'Back to menu', fn: CG.showMenu }
+      ] : [{ label: 'Deal the next hand', primary: true, fn: function () { self.startHand(); } }]
+    });
+  };
+  CA.resume = function () {
+    var S = this.S, self = this;
+    this.sel = [];
+    if (S.phase === 'handEnd') { this.render(); return this.showHandEnd(); }
+    this.render();
+    if (S.turn === 1 || CG.autoplay) CG.later(function () { if (S === self.S) self.aiRun(); }, CG.wait(900));
+  };
+
+  /* ---------- Computer player ---------- */
+  CA.aiRun = function () {
+    var S = this.S, self = this, p = S.turn;
+    if (S.phase === 'handEnd' || S.over) return;
+    if (S.aiStep === 1) {
+      var sel = this.aiTakeSel(p);
+      if (sel) {
+        var n = S.pile.length;
+        var plan = this.plan(p, sel, S.pile[S.pile.length - 1]);
+        if (this.doTake(p, sel, plan)) return;
+        S.msg = (p === 1 ? 'The computer took the discard pile' : 'You took the pile') + ' (' + n + ' cards).';
+      } else {
+        var r = this.drawStock(p);
+        S.msg = (p === 1 ? 'The computer drew ' : 'You drew ') + r.got.length + ' cards' + (r.red3 ? ' and put down a red 3' : '') + '.';
+      }
+      S.aiStep = 2;
+    } else if (S.aiStep === 2) {
+      var before = S.melds[p].reduce(function (s, m) { return s + m.cards.length; }, 0);
+      this.aiMeld(p);
+      if (S.phase === 'handEnd') return;
+      var after = S.melds[p].reduce(function (s, m) { return s + m.cards.length; }, 0);
+      if (after > before) S.msg = (p === 1 ? 'The computer melded ' : 'You melded ') + (after - before) + ' cards.';
+      if (!S.hands[p].length) return this.endHand(p);
+      S.aiStep = 3;
+    } else {
+      return this.discard(p, this.aiPickDiscard(p));
+    }
+    this.render();
+    CG.later(function () { if (S === self.S) self.aiRun(); }, CG.wait(1300));
+  };
+  CA.aiBuildInitial = function (p, base, top) {
+    var S = this.S, hand = S.hands[p], used = {}, self = this;
+    base.forEach(function (c) { used[c.id] = 1; });
+    var by = {}, ranks = [];
+    hand.forEach(function (c) {
+      if (used[c.id] || isWild(c) || c.r === 3) return;
+      if (top && c.r === top.r) return;
+      if (!by[c.r]) { by[c.r] = []; ranks.push(c.r); }
+      by[c.r].push(c);
+    });
+    var sel = base.slice();
+    function tryIt() { var pl = self.plan(p, sel, top); return pl.err ? null : sel; }
+    ranks.forEach(function (r) { if (by[r].length >= 3) sel = sel.concat(by[r]); });
+    if (sel.length && tryIt()) return sel;
+    var wilds = hand.filter(function (c) { return isWild(c) && !used[c.id]; }).sort(function (a, b) { return val(a) - val(b); });
+    var pairs = ranks.filter(function (r) { return by[r].length === 2; }).sort(function (a, b) { return val(by[b][0]) - val(by[a][0]); });
+    for (var i = 0; i < pairs.length && wilds.length; i++) {
+      sel = sel.concat(by[pairs[i]]);
+      sel.push(wilds.shift());
+      if (tryIt()) return sel;
+    }
+    while (wilds.length && sel.length) {
+      sel.push(wilds.shift());
+      if (tryIt()) return sel;
+    }
+    return null;
+  };
+  CA.aiTakeSel = function (p) {
+    var S = this.S, top = S.pile[S.pile.length - 1], hand = S.hands[p];
+    if (!top || isBlack3(top) || isWild(top)) return null;
+    var frozen = S.frozen || !S.melds[p].length;
+    var nat = hand.filter(function (c) { return !isWild(c) && c.r === top.r; });
+    var wild = hand.filter(isWild).sort(function (a, b) { return val(a) - val(b); });
+    var tries = [];
+    if (frozen) { if (nat.length >= 2) tries.push(nat.slice()); }
+    else {
+      if (this.findMeld(p, top.r) || nat.length >= 2) tries.push(nat.slice());
+      if (nat.length === 1 && wild.length && S.pile.length >= 3) tries.push([nat[0], wild[0]]);
+    }
+    for (var i = 0; i < tries.length; i++) {
+      var pl = this.plan(p, tries[i], top);
+      if (!pl.err) return tries[i];
+      if (!S.melds[p].length && pl.short) {
+        var ext = this.aiBuildInitial(p, tries[i], top);
+        if (ext) return ext;
+      }
+    }
+    return null;
+  };
+  CA.aiMeld = function (p) {
+    var S = this.S, guard = 0, self = this;
+    if (!S.melds[p].length) {
+      var first = this.aiBuildInitial(p, [], null);
+      if (!first) return;
+      this.applyPlan(p, this.plan(p, first, null), first);
+    }
+    while (guard++ < 14) {
+      var hand = S.hands[p], by = {}, ranks = [], done = false, k, pl;
+      hand.forEach(function (c) {
+        if (isWild(c) || c.r === 3) return;
+        if (!by[c.r]) { by[c.r] = []; ranks.push(c.r); }
+        by[c.r].push(c);
+      });
+      var cands = [];
+      ranks.forEach(function (r) { if (self.findMeld(p, r)) cands.push(by[r]); });
+      ranks.forEach(function (r) { if (!self.findMeld(p, r) && by[r].length >= 3) cands.push(by[r]); });
+      for (k = 0; k < cands.length && !done; k++) {
+        pl = this.plan(p, cands[k], null);
+        if (!pl.err) { this.applyPlan(p, pl, cands[k]); done = true; }
+      }
+      if (done) continue;
+      var wilds = hand.filter(isWild).sort(function (a, b) { return val(a) - val(b); });
+      if (wilds.length) {
+        var ms = S.melds[p].filter(function (m) { return m.cards.length < 7 && m.r !== 3; })
+          .sort(function (a, b) { return b.cards.length - a.cards.length; });
+        for (k = 0; k < ms.length && !done; k++) {
+          var need = 7 - ms[k].cards.length, wc = wildCount(ms[k]);
+          if (need <= wilds.length && wc + need <= 3) {
+            var ws = wilds.slice(0, need);
+            pl = this.plan(p, ws, null, ms[k].r);
+            if (!pl.err) { this.applyPlan(p, pl, ws); done = true; }
+          }
+        }
+      }
+      if (!done) break;
+    }
+    if (this.canastas(p) >= 2) this.aiGoOut(p);
+  };
+  CA.aiGoOut = function (p) {
+    var S = this.S, hand = S.hands[p], pl;
+    if (!hand.length) return;
+    pl = this.plan(p, hand.slice(), null);
+    if (!pl.err) { this.applyPlan(p, pl, hand.slice()); return; }
+    for (var i = 0; i < hand.length; i++) {
+      var rest = hand.filter(function (c, j) { return j !== i; });
+      if (!rest.length) return;
+      pl = this.plan(p, rest, null);
+      if (!pl.err) { this.applyPlan(p, pl, rest); return; }
+    }
+  };
+  CA.aiPickDiscard = function (p) {
+    var S = this.S, hand = S.hands[p], opp = 1 - p, self = this, cnt = {};
+    hand.forEach(function (c) { if (!isWild(c)) cnt[c.r] = (cnt[c.r] || 0) + 1; });
+    var best = null, bs = 1e9;
+    hand.forEach(function (c) {
+      var sc;
+      if (isWild(c)) sc = 1000 + val(c);
+      else if (isBlack3(c)) sc = -50;
+      else {
+        sc = cnt[c.r] === 1 ? 0 : cnt[c.r] === 2 ? 40 : 80;
+        if (self.findMeld(opp, c.r)) sc += S.frozen ? 15 : 70;
+        if (self.findMeld(p, c.r)) sc += 50;
+        sc += val(c) * 0.4;
+      }
+      if (sc < bs) { bs = sc; best = c; }
+    });
+    return best;
+  };
+
+  /* ---------- Your moves ---------- */
+  CA.selCards = function () {
+    var H = this.S.hands[0];
+    return this.sel.map(function (id) { return H[CG.byId(H, id)]; }).filter(function (c) { return !!c; });
+  };
+  CA.bgTap = function () {
+    if (this.sel.length) { this.sel = []; this.render(); }
+  };
+  CA.act = function (a, d) {
+    var S = this.S, plan, sc;
+    if (a === 'scores') return this.showScores();
+    if (S.over || S.phase === 'handEnd') return;
+    if (S.turn !== 0 || CG.autoplay) { CG.toast('Please wait. The computer is playing.'); return; }
+    if (a === 'hand') {
+      var id = +d.id, i = this.sel.indexOf(id);
+      if (i >= 0) this.sel.splice(i, 1); else this.sel.push(id);
+      return this.render();
+    }
+    if (a === 'clear') { this.sel = []; return this.render(); }
+    if (a === 'stock') {
+      if (S.phase !== 'draw') { CG.toast('You already drew this turn. Now meld, or pick 1 card and tap Discard.'); return; }
+      var r = this.drawStock(0);
+      this.sel = [];
+      S.msg = 'You drew ' + r.got.map(CG.cardText).join(' and ') + '.' + (r.red3 ? ' A red 3 went to your red 3 pile.' : '');
+      return this.render();
+    }
+    if (a === 'pile') {
+      if (S.phase === 'draw') {
+        sc = this.selCards();
+        plan = this.checkTake(0, sc);
+        if (plan.err) { CG.toast(plan.err, 4500); return; }
+        var n = S.pile.length;
+        this.sel = [];
+        if (this.doTake(0, sc, plan)) return;
+        S.msg = 'You took the pile: ' + n + ' cards. They are marked NEW.';
+        return this.render();
+      }
+      a = 'discard';
+    }
+    if (S.phase === 'draw' && (a === 'meld' || a === 'tile' || a === 'discard')) {
+      CG.toast('First tap the deck to draw 2 cards, or take the discard pile.');
+      return;
+    }
+    if (a === 'discard') {
+      if (this.sel.length !== 1) { CG.toast('Pick exactly 1 card to discard.'); return; }
+      var c = this.selCards()[0];
+      this.sel = [];
+      return this.discard(0, c);
+    }
+    if (a === 'meld' || a === 'tile') {
+      sc = this.selCards();
+      if (!sc.length) { CG.toast(a === 'tile' ? 'Pick cards from your hand first, then tap the meld to add them.' : 'Pick the cards you want to meld.'); return; }
+      plan = this.plan(0, sc, null, a === 'tile' ? +d.r : null);
+      if (plan.err) { CG.toast(plan.err, 4500); return; }
+      this.applyPlan(0, plan, sc);
+      this.sel = [];
+      S.msg = 'You melded ' + sc.length + ' card' + (sc.length > 1 ? 's' : '') + '.';
+      if (!S.hands[0].length) return this.endHand(0);
+      return this.render();
+    }
+  };
+  CA.showScores = function () {
+    var S = this.S;
+    CG.dialog({
+      title: 'Scores',
+      body: '<table class="sc"><tr><th></th><th>Score</th><th>First meld needs</th></tr>' +
+        '<tr><td>You</td><td>' + S.scores[0] + '</td><td>' + minMeld(S.scores[0]) + '</td></tr>' +
+        '<tr><td>Computer</td><td>' + S.scores[1] + '</td><td>' + minMeld(S.scores[1]) + '</td></tr></table><p>First to ' + S.target + ' wins.</p>',
+      buttons: [{ label: 'Back to the game', primary: true }]
+    });
+  };
+
+  /* ---------- Drawing the table ---------- */
+  function tile(m, x, y, tw, th, own) {
+    var w = wildCount(m), sz = m.cards.length, can = sz >= 7, nat = can && !w;
+    var cls = 'tilem' + (can ? (nat ? ' nat' : ' mix') : '');
+    var sub = can ? (nat ? 'Natural' : 'Mixed') : w ? w + ' wild' : 'no wild';
+    return '<div class="' + cls + '"' + (own ? ' data-act="tile" data-r="' + m.r + '"' : '') +
+      ' style="left:' + Math.round(x) + 'px;top:' + Math.round(y) + 'px;width:' + tw + 'px;height:' + th + 'px">' +
+      '<span class="tr" style="font-size:' + Math.round(tw * 0.44) + 'px;margin-top:' + Math.round(th * 0.05) + 'px">' + CG.RANKS[m.r] + '</span>' +
+      '<span class="tc" style="font-size:' + Math.round(tw * 0.27) + 'px">&times;' + sz + '</span>' +
+      '<span class="tw" style="font-size:' + Math.max(15, Math.round(tw * 0.19)) + 'px">' + sub + '</span></div>';
+  }
+  CA.render = function () {
+    var S = this.S, W = CG.W(), H = CG.H(), h = '', self = this, gap = 8;
+    var hand = S.hands[0], n = Math.max(1, hand.length), cw = 100, rows = 1, perRow = 1;
+    for (rows = 1; rows <= 5; rows++) {
+      cw = Math.min(138, (H - 4 * gap) / (4.93 + 0.77 * (rows - 1)));
+      perRow = Math.max(1, Math.floor((W - cw) / (0.6 * cw)) + 1);
+      if (Math.ceil(n / perRow) <= rows) break;
+    }
+    rows = Math.max(1, Math.ceil(n / perRow));
+    cw = Math.floor(cw);
+    var ch = cw * 1.4, tw = Math.round(cw * 0.78), th = Math.round(tw * 1.25), pw = Math.round(cw * 0.95), ph = Math.round(pw * 1.4);
+    var used = th + gap + ph + gap + th + gap + Math.round(ch * 0.18) + (rows - 1) * ch * 0.55 + ch;
+    var extra = Math.max(0, H - used);
+    var yA = 0, yB = Math.round(th + gap + extra * 0.3), yC = Math.round(yB + ph + gap + extra * 0.3);
+    var yD = Math.round(H - ch - (rows - 1) * ch * 0.55);
+    var lblW = Math.round(Math.min(200, W * 0.21));
+    var myTurn = S.turn === 0 && S.phase !== 'handEnd';
+
+    function meldRow(p, y) {
+      var M = S.melds[p], x0 = lblW + gap, cnt = M.length;
+      var stepX = cnt > 1 ? Math.min(tw + gap, (W - x0 - tw) / (cnt - 1)) : 0;
+      if (!cnt) return '<div class="note" style="text-align:left;right:0;left:' + x0 + 'px;top:' + Math.round(y + th / 2 - 16) + 'px;font-size:22px;color:var(--ink-dim)">' +
+        (p === 0 ? 'No melds yet. Your first meld needs ' + minMeld(S.scores[0]) + ' points.' : 'No melds yet.') + '</div>';
+      var out = '';
+      M.forEach(function (m, i) { out += tile(m, x0 + i * stepX, y, tw, th, p === 0); });
+      return out;
+    }
+    function label(p, y) {
+      var turn = S.turn === p && S.phase !== 'handEnd';
+      return '<div class="lbl' + (turn ? ' turn' : '') + '" style="left:0;top:' + y + 'px;width:' + lblW + 'px;height:' + th + 'px;padding:6px 8px;font-size:20px">' +
+        '<b>' + (p === 0 ? 'You' : 'Computer') + '</b>Score ' + S.scores[p] + '<br>' + (p === 1 ? S.hands[1].length + ' cards' : '') +
+        (S.red3[p].length ? (p === 1 ? ' &middot; ' : '') + '<span style="color:#ff8b9b">Red 3s: ' + S.red3[p].length + '</span>' : '') + '</div>';
+    }
+    h += label(1, yA) + meldRow(1, yA);
+    h += label(0, yC) + meldRow(0, yC);
+
+    var top = S.pile[S.pile.length - 1];
+    h += S.stock.length ? CG.card(null, 0, yB, { w: pw, act: 'stock', label: S.stock.length, hint: myTurn && S.phase === 'draw' })
+      : CG.slot(0, yB, 'Empty', { w: pw });
+    if (top) h += CG.card(top, pw + gap, yB, { w: pw, act: 'pile', hint: myTurn && S.phase === 'draw' && this.sel.length > 0 });
+    else h += CG.slot(pw + gap, yB, 'Empty', { w: pw, act: 'pile' });
+    var ix = 2 * pw + 2 * gap + 10;
+    var info = 'Discard pile: ' + S.pile.length + ' card' + (S.pile.length === 1 ? '' : 's');
+    if (S.frozen) info += ' &middot; <span style="color:var(--gold)">FROZEN</span>';
+    else if (top && isBlack3(top)) info += ' &middot; <span style="color:var(--gold)">Blocked</span>';
+    h += '<div class="note" style="left:' + ix + 'px;top:' + (yB + 4) + 'px;text-align:left;font-size:22px">' + info + '</div>';
+    var btns = '';
+    if (myTurn && S.phase === 'draw') {
+      btns = '<button class="bigbtn primary" data-act="stock">Draw 2</button><button class="bigbtn" data-act="pile">Take pile</button>';
+    } else if (myTurn && S.phase === 'meld') {
+      btns = '<button class="bigbtn primary" data-act="meld"' + (this.sel.length ? '' : ' disabled') + '>Meld</button>' +
+        '<button class="bigbtn" data-act="discard"' + (this.sel.length === 1 ? '' : ' disabled') + '>Discard</button>' +
+        '<button class="bigbtn" data-act="clear"' + (this.sel.length ? '' : ' disabled') + '>Clear</button>';
+    }
+    if (btns) h += '<div class="panel" style="left:' + ix + 'px;top:' + (yB + 40) + 'px;text-align:left;margin-left:-6px">' + btns + '</div>';
+
+    var per = Math.ceil(n / rows);
+    for (var r = 0; r < rows; r++) {
+      var row = hand.slice(r * per, (r + 1) * per), m = row.length;
+      var st = m > 1 ? Math.min(cw * 0.74, (W - cw) / (m - 1)) : 0, x0 = (W - (cw + st * (m - 1))) / 2;
+      row.forEach(function (c, k) {
+        var on = self.sel.indexOf(c.id) >= 0;
+        h += CG.card(c, x0 + k * st, yD + r * ch * 0.55 - (on ? Math.round(ch * 0.18) : 0), {
+          act: 'hand', data: { id: c.id }, w: cw, z: 10 + r * 40 + k, sel: on, cls: S.newIds.indexOf(c.id) >= 0 ? 'new' : ''
+        });
+      });
+    }
+    CG.paint(h);
+    var left = S.msg ? S.msg + ' ' : '';
+    if (S.phase === 'handEnd') left = 'Hand over.';
+    else if (S.turn === 1) left += '<span style="color:var(--ink-dim)">The computer is playing&hellip;</span>';
+    else if (S.phase === 'draw') left += '<span style="color:var(--gold)">Your turn: draw 2, or take the pile.</span>';
+    else left += '<span style="color:var(--gold)">Meld, then discard 1 card.</span>';
+    CG.status(left, '<button class="bigbtn" data-act="scores">Scores</button>');
+    CG.save(this);
+  };
+  CA.sel = [];
+  CG.register(CA);
+  CG.canastaTest = { plan: function (g, p, cards, top, r) { return g.plan(p, cards, top, r); } };
+})();
+
+/* Gin Rummy, Crazy Eights, Blackjack */
+(function () {
+  'use strict';
+  var CG = window.CG;
+  function top(a) { return a[a.length - 1]; }
+
+  /* ================= GIN RUMMY ================= */
+  function dv(c) { return c.r >= 10 ? 10 : c.r; }
+  function meldList(cards) {
+    var list = [], byR = {}, byS = {};
+    cards.forEach(function (c, i) {
+      (byR[c.r] = byR[c.r] || []).push(i);
+      (byS[c.s] = byS[c.s] || []).push(i);
+    });
+    function add(idx) {
+      var m = 0, v = 0;
+      idx.forEach(function (i) { m |= 1 << i; v += dv(cards[i]); });
+      list.push({ mask: m, val: v });
+    }
+    Object.keys(byR).forEach(function (r) {
+      var idx = byR[r];
+      if (idx.length >= 3) add(idx);
+      if (idx.length === 4) for (var k = 0; k < 4; k++) add(idx.filter(function (x, j) { return j !== k; }));
+    });
+    Object.keys(byS).forEach(function (s) {
+      var idx = byS[s].slice().sort(function (a, b) { return cards[a].r - cards[b].r; });
+      for (var a = 0; a < idx.length; a++) {
+        var end = a;
+        while (end + 1 < idx.length && cards[idx[end + 1]].r === cards[idx[end]].r + 1) end++;
+        for (var b = a + 2; b <= end; b++) add(idx.slice(a, b + 1));
+      }
+    });
+    return list;
+  }
+  function bestMelds(cards) {
+    var M = meldList(cards), total = 0, bestV = 0, bestSet = [];
+    cards.forEach(function (c) { total += dv(c); });
+    function rec(i, used, v, chosen) {
+      if (v > bestV) { bestV = v; bestSet = chosen.slice(); }
+      for (var k = i; k < M.length; k++)
+        if (!(M[k].mask & used)) { chosen.push(k); rec(k + 1, used | M[k].mask, v + M[k].val, chosen); chosen.pop(); }
+    }
+    rec(0, 0, 0, []);
+    var inMeld = 0, melds = bestSet.map(function (k) {
+      inMeld |= M[k].mask;
+      var g = [];
+      cards.forEach(function (c, i) { if (M[k].mask & (1 << i)) g.push(c); });
+      return g.sort(function (a, b) { return a.r - b.r; });
+    });
+    var dead = cards.filter(function (c, i) { return !(inMeld & (1 << i)); }).sort(function (a, b) { return a.r - b.r || (a.s < b.s ? -1 : 1); });
+    return { melds: melds, dead: dead, dw: total - bestV };
+  }
+  function fits(c, m) {
+    var set = m.every(function (x) { return x.r === m[0].r; });
+    if (set) return c.r === m[0].r && m.length < 4;
+    if (c.s !== m[0].s) return false;
+    var rs = m.map(function (x) { return x.r; }).sort(function (a, b) { return a - b; });
+    return c.r === rs[0] - 1 || c.r === rs[rs.length - 1] + 1;
+  }
+  function layoff(melds, dead) {
+    var ms = melds.map(function (m) { return m.slice(); }), left = dead.slice(), laid = [], changed = true;
+    while (changed) {
+      changed = false;
+      for (var i = 0; i < left.length && !changed; i++)
+        for (var j = 0; j < ms.length; j++)
+          if (fits(left[i], ms[j])) { ms[j].push(left[i]); laid.push(left[i]); left.splice(i, 1); changed = true; break; }
+    }
+    return { laid: laid, left: left };
+  }
+  function sumDv(a) { var s = 0; a.forEach(function (c) { s += dv(c); }); return s; }
+  function bestDiscard(hand, forbidId) {
+    var best = null;
+    hand.forEach(function (c) {
+      if (c.id === forbidId) return;
+      var rest = hand.filter(function (x) { return x.id !== c.id; }), dw = bestMelds(rest).dw;
+      if (!best || dw < best.dw || (dw === best.dw && dv(c) > dv(best.c))) best = { c: c, dw: dw };
+    });
+    return best;
+  }
+
+  var GR = {
+    id: 'gin', name: 'Gin Rummy', group: 'vs',
+    blurb: 'Make sets and runs, then knock before the computer does.',
+    emblem: [{ r: 5, s: 'h' }, { r: 6, s: 'h' }, { r: 7, s: 'h' }],
+    tools: [],
+    rules:
+      '<p>You play against the computer. First to <b>100 points</b> wins.</p>' +
+      '<h4>Your turn</h4><ul><li>Take the top card of the discard pile, or draw from the deck.</li>' +
+      '<li>Then tap a card to raise it and tap it again (or tap <b>Discard</b>) to throw it away.</li></ul>' +
+      '<h4>Melds</h4><ul><li><b>Sets:</b> 3 or 4 cards of the same rank, like three 8s.</li>' +
+      '<li><b>Runs:</b> 3 or more cards in a row in the same suit, like 4, 5, 6 of Hearts. Ace is low.</li>' +
+      '<li>Your hand is sorted for you: melds first (in boxes), then the loose cards, called <b>deadwood</b>.</li></ul>' +
+      '<h4>Knocking</h4><ul><li>Deadwood counts: Ace 1, number cards their number, picture cards 10.</li>' +
+      '<li>When your deadwood is 10 or less after discarding, you can <b>Knock</b> to end the hand.</li>' +
+      '<li>No deadwood at all is <b>Gin</b>: 25 bonus points.</li>' +
+      '<li>The other player can add loose cards to your melds. If their deadwood ends up as low as yours, they score instead (an undercut, 25 bonus).</li></ul>'
+  };
+  GR.newGame = function (first) {
+    var self = this;
+    if (first) return this.startGame();
+    CG.confirmNew(this, function () { self.startGame(); });
+  };
+  GR.startGame = function () {
+    CG.clearTimers();
+    this.S = { scores: [0, 0], boxes: [0, 0], dealer: 1, over: false };
+    this.startHand();
+  };
+  GR.startHand = function () {
+    var S = this.S;
+    S.stock = CG.shuffle(CG.deck(1));
+    S.hands = [[], []];
+    for (var i = 0; i < 10; i++) { S.hands[0].push(S.stock.pop()); S.hands[1].push(S.stock.pop()); }
+    S.pile = [S.stock.pop()];
+    S.dealer = 1 - S.dealer;
+    S.turn = 1 - S.dealer;
+    S.phase = 'draw';
+    S.takenId = null;
+    S.newId = null;
+    S.summary = null;
+    S.msg = S.turn === 0 ? 'New hand. You go first.' : 'New hand. The computer goes first.';
+    this.sel = null;
+    this.beginTurn();
+  };
+  GR.beginTurn = function () {
+    var S = this.S, self = this;
+    S.phase = 'draw';
+    S.takenId = null;
+    this.render();
+    if (S.turn === 1 || CG.autoplay) CG.later(function () { if (S === self.S) self.aiDraw(); }, CG.wait(1100));
+  };
+  GR.resume = function () {
+    var S = this.S, self = this;
+    this.sel = null;
+    if (S.phase === 'handEnd') { this.render(); return this.showHandEnd(); }
+    this.render();
+    if (S.turn === 1 || CG.autoplay)
+      CG.later(function () { if (S === self.S) { if (S.phase === 'draw') self.aiDraw(); else self.aiDiscard(); } }, CG.wait(900));
+  };
+  GR.take = function (p, fromPile) {
+    var S = this.S, c = fromPile ? S.pile.pop() : S.stock.pop();
+    S.hands[p].push(c);
+    S.takenId = fromPile ? c.id : null;
+    S.newId = p === 0 ? c.id : null;
+    S.phase = 'discard';
+    return c;
+  };
+  GR.aiDraw = function () {
+    var S = this.S, p = S.turn, self = this, hand = S.hands[p], t = top(S.pile);
+    var cur = bestMelds(hand).dw, takeIt = false;
+    if (t) {
+      var b = bestMelds(hand.concat([t]));
+      var inMeld = !b.dead.some(function (c) { return c.id === t.id; });
+      var after = bestDiscard(hand.concat([t]), t.id);
+      takeIt = inMeld || (after.dw < cur && dv(t) <= 3);
+    }
+    var c = this.take(p, takeIt);
+    S.msg = (p === 1 ? 'The computer ' : 'You ') + (takeIt ? 'took ' + CG.cardText(c) + ' from the discard pile.' : 'drew from the deck.');
+    this.render();
+    CG.later(function () { if (S === self.S) self.aiDiscard(); }, CG.wait(1200));
+  };
+  GR.aiDiscard = function () {
+    var S = this.S, p = S.turn, b = bestDiscard(S.hands[p], S.takenId);
+    this.discard(p, b.c, b.dw <= 10);
+  };
+  GR.discard = function (p, c, knock) {
+    var S = this.S, H = S.hands[p], i = CG.byId(H, c.id);
+    if (i < 0) return;
+    H.splice(i, 1);
+    S.newId = null;
+    this.sel = null;
+    if (knock) {
+      var dw = bestMelds(H).dw;
+      if (dw > 10) { H.splice(i, 0, c); CG.toast('Your deadwood would be ' + dw + '. You need 10 or less to knock.'); return; }
+      S.pile.push(c);
+      return this.resolve(p, dw === 0);
+    }
+    S.pile.push(c);
+    S.msg = (p === 0 ? 'You discarded ' : 'The computer discarded ') + CG.cardText(c) + '.';
+    if (S.stock.length <= 2) return this.deadHand();
+    S.turn = 1 - p;
+    this.beginTurn();
+  };
+  GR.deadHand = function () {
+    var S = this.S;
+    S.phase = 'handEnd';
+    S.summary = { title: 'No winner this hand', body: '<p>The deck ran low before anyone knocked, so nobody scores. The next hand starts fresh.</p>', gameOver: false };
+    this.render();
+    var self = this;
+    CG.later(function () { self.showHandEnd(); }, CG.wait(700));
+  };
+  function handHTML(melds, dead, laid) {
+    var h = '<div class="hands">';
+    melds.forEach(function (m) { h += '<span class="grp">' + CG.inlineCards(m, 52) + '</span>'; });
+    if (laid && laid.length) h += '<span class="grp" title="laid off">' + CG.inlineCards(laid, 52) + '</span>';
+    if (dead.length) h += '<span class="grp dead">' + CG.inlineCards(dead, 52) + '</span>';
+    return h + '</div>';
+  }
+  GR.resolve = function (k, gin) {
+    var S = this.S, d = 1 - k, K = bestMelds(S.hands[k]), D = bestMelds(S.hands[d]);
+    var defDead = D.dead, laid = [];
+    if (!gin) { var lo = layoff(K.melds, D.dead); laid = lo.laid; defDead = lo.left; }
+    var kdw = K.dw, ddw = sumDv(defDead), winner, pts, how;
+    var who = ['You', 'The computer'];
+    if (gin) { winner = k; pts = 25 + ddw; how = who[k] + ' went Gin! 25 bonus + ' + ddw + ' deadwood.'; }
+    else if (ddw <= kdw) { winner = d; pts = 25 + (kdw - ddw); how = who[d] + ' undercut the knock! 25 bonus + ' + (kdw - ddw) + '.'; }
+    else { winner = k; pts = ddw - kdw; how = who[k] + ' knocked and won by ' + pts + ' (' + ddw + ' minus ' + kdw + ').'; }
+    S.scores[winner] += pts;
+    S.boxes[winner]++;
+    var body = '<p><b>' + how + '</b></p>' +
+      '<h4>' + (k === 0 ? 'Your hand (knocked)' : 'Computer’s hand (knocked)') + ': deadwood ' + kdw + '</h4>' + handHTML(K.melds, K.dead) +
+      '<h4>' + (d === 0 ? 'Your hand' : 'Computer’s hand') + ': deadwood ' + ddw + '</h4>' + handHTML(D.melds, defDead, laid) +
+      (laid.length ? '<p style="font-size:20px">The middle group shows cards added to the knocker’s melds.</p>' : '') +
+      '<table class="sc"><tr><th></th><th>Score</th></tr><tr><td>You</td><td>' + S.scores[0] + '</td></tr><tr><td>Computer</td><td>' + S.scores[1] + '</td></tr></table>';
+    var title = winner === 0 ? 'You win the hand' : 'The computer wins the hand', over = false;
+    if (S.scores[winner] >= 100) {
+      over = true;
+      var fin = [S.scores[0] + S.boxes[0] * 25 + (winner === 0 ? 100 : 0), S.scores[1] + S.boxes[1] * 25 + (winner === 1 ? 100 : 0)];
+      title = winner === 0 ? 'You won the game!' : 'The computer wins the game';
+      body += '<p>Final count with 100 for winning and 25 per hand won: You ' + fin[0] + ', Computer ' + fin[1] + '.</p>';
+      if (winner === 0) CG.addWin(this.id);
+    }
+    S.phase = 'handEnd';
+    S.summary = { title: title, body: body, gameOver: over };
+    S.reveal = true;
+    if (over) S.over = true;
+    this.render();
+    var self = this;
+    CG.later(function () { self.showHandEnd(); }, CG.wait(800));
+  };
+  GR.showHandEnd = function () {
+    var S = this.S, sm = S.summary, self = this;
+    CG.dialog({
+      title: sm.title, body: sm.body,
+      buttons: sm.gameOver ? [
+        { label: 'Play a new game', primary: true, fn: function () { self.startGame(); } },
+        { label: 'Back to menu', fn: CG.showMenu }
+      ] : [{ label: 'Deal the next hand', primary: true, fn: function () { S.reveal = false; self.startHand(); } }]
+    });
+  };
+  GR.bgTap = function () { if (this.sel != null) { this.sel = null; this.render(); } };
+  GR.act = function (a, d) {
+    var S = this.S;
+    if (a === 'scores') return CG.dialog({ title: 'Scores', body: '<table class="sc"><tr><th></th><th>Score</th><th>Hands won</th></tr><tr><td>You</td><td>' + S.scores[0] + '</td><td>' + S.boxes[0] + '</td></tr><tr><td>Computer</td><td>' + S.scores[1] + '</td><td>' + S.boxes[1] + '</td></tr></table><p>First to 100 wins.</p>', buttons: [{ label: 'Back to the game', primary: true }] });
+    if (S.over || S.phase === 'handEnd') return;
+    if (S.turn !== 0 || CG.autoplay) { CG.toast('Please wait. The computer is playing.'); return; }
+    if (a === 'stock' || a === 'pile') {
+      if (S.phase !== 'draw') { CG.toast('You already have your card. Now pick a card to discard.'); return; }
+      if (a === 'pile' && !S.pile.length) { CG.toast('The discard pile is empty.'); return; }
+      var c = this.take(0, a === 'pile');
+      S.msg = a === 'pile' ? 'You took ' + CG.cardText(c) + '.' : 'You drew ' + CG.cardText(c) + '.';
+      return this.render();
+    }
+    if (a === 'hand') {
+      var id = +d.id;
+      if (S.phase !== 'discard') { CG.toast('First take a card: tap the deck or the discard pile.'); return; }
+      if (this.sel === id || CG.settings.oneTap) return this.tryDiscard(id, false);
+      this.sel = id;
+      return this.render();
+    }
+    if ((a === 'discard' || a === 'knock') && this.sel != null) return this.tryDiscard(this.sel, a === 'knock');
+  };
+  GR.tryDiscard = function (id, knock) {
+    var S = this.S;
+    if (id === S.takenId) { CG.toast('You can’t throw away the card you just took from the pile.'); this.sel = null; return this.render(); }
+    var H = S.hands[0], c = H[CG.byId(H, id)];
+    this.discard(0, c, knock);
+  };
+  GR.render = function () {
+    var S = this.S, W = CG.W(), H = CG.H(), h = '', self = this, gap = 10;
+    var hand = S.hands[0], arr = bestMelds(hand), seq = [];
+    arr.melds.forEach(function (m, gi) { m.forEach(function (c, k) { seq.push({ c: c, g: gi, br: k === 0 && gi > 0 }); }); });
+    arr.dead.forEach(function (c, k) { seq.push({ c: c, g: -1, br: k === 0 && arr.melds.length > 0 }); });
+    var step = 0.7, brk = 0.28;
+    function units(items) {
+      var u = 1;
+      for (var i = 1; i < items.length; i++) u += step + (items[i].br ? brk : 0);
+      return u;
+    }
+    var cw1 = Math.min(W / units(seq), H * 0.36 / 1.65);
+    var half = Math.ceil(seq.length / 2), r1 = seq.slice(0, half), r2 = seq.slice(half);
+    if (r2.length) r2 = r2.map(function (x, i) { return i === 0 ? { c: x.c, g: x.g, br: false } : x; });
+    var cw2 = Math.min(W / Math.max(units(r1), units(r2)), H * 0.5 / 2.4);
+    var two = cw2 > cw1 * 1.12, rows = two ? [r1, r2] : [seq];
+    var cw = Math.floor(Math.min(two ? cw2 : cw1, 140)), ch = cw * 1.4, lift = Math.round(ch * 0.2);
+    var handTop = Math.round(H - ch - (two ? ch * 0.55 : 0));
+    rows.forEach(function (row, r) {
+      var tot = units(row) * cw, x = (W - tot) / 2;
+      row.forEach(function (it, k) {
+        if (k > 0) x += (step + (it.br ? brk : 0)) * cw;
+        var on = self.sel === it.c.id;
+        h += CG.card(it.c, x, handTop + r * ch * 0.55 - (on ? lift : 0), {
+          act: 'hand', data: { id: it.c.id }, w: cw, z: 10 + r * 30 + k, sel: on,
+          cls: (it.g < 0 ? '' : '') + (S.newId === it.c.id ? ' new' : ''), dim: S.phase === 'discard' && S.turn === 0 && it.c.id === S.takenId
+        });
+      });
+    });
+    var midBottom = handTop - lift - gap;
+    var lblH = 84, pw = Math.floor(Math.min(cw * 1.05, (midBottom - lblH - gap * 2) / 1.4)), ph = pw * 1.4;
+    var my = Math.round(lblH + gap + (midBottom - lblH - gap - ph) / 2);
+    var cx = W / 2;
+    var oppTurn = S.turn === 1 && S.phase !== 'handEnd';
+    var lblW = Math.min(360, W - 20);
+    h += '<div class="lbl' + (oppTurn ? ' turn' : '') + '" style="left:' + Math.round(cx - lblW / 2) + 'px;top:0;width:' + lblW + 'px"><b>Computer</b>' +
+      (S.reveal ? 'Hand shown in the results' : S.hands[1].length + ' cards in hand') + '</div>';
+    var sx = Math.round(cx - pw - gap * 2), px = Math.round(cx + gap * 2);
+    if (S.reveal) sx = px = -9999;
+    h += CG.card(null, sx, my, { w: pw, act: 'stock', label: S.stock.length, hint: S.turn === 0 && S.phase === 'draw' });
+    if (S.pile.length) h += CG.card(top(S.pile), px, my, { w: pw, act: 'pile', hint: S.turn === 0 && S.phase === 'draw' });
+    else h += CG.slot(px, my, '', { w: pw, act: 'pile' });
+    h += '<div class="note" style="left:' + (sx) + 'px;top:' + Math.round(my + ph + 4) + 'px;width:' + pw + 'px;font-size:20px">Deck</div>';
+    h += '<div class="note" style="left:' + (px) + 'px;top:' + Math.round(my + ph + 4) + 'px;width:' + pw + 'px;font-size:20px">Discard</div>';
+    var bx = px + pw + gap * 3, mine = S.turn === 0 && S.phase === 'discard';
+    if (mine && !S.reveal) {
+      var canKnock = false, kdw = 0;
+      if (this.sel != null && this.sel !== S.takenId) {
+        kdw = bestMelds(hand.filter(function (c) { return c.id !== self.sel; })).dw;
+        canKnock = kdw <= 10;
+      }
+      var bw = W - bx;
+      var vertical = bw >= 170;
+      var bs = vertical ? 'position:absolute;left:' + bx + 'px;top:' + my + 'px;width:' + Math.min(bw - 4, 230) + 'px' :
+        'position:absolute;left:0;right:0;top:' + Math.round(my - 80) + 'px;text-align:center';
+      h += '<div style="' + bs + '">' +
+        '<button class="bigbtn" style="width:100%;margin-bottom:12px" data-act="discard"' + (this.sel != null ? '' : ' disabled') + '>Discard</button>' +
+        (canKnock ? '<button class="bigbtn primary" style="width:100%" data-act="knock">' + (kdw === 0 ? 'Gin!' : 'Knock (' + kdw + ')') + '</button>' : '') + '</div>';
+    }
+    CG.paint(h);
+    var left = S.msg ? S.msg + ' ' : '';
+    if (S.phase === 'handEnd') left = 'Hand over.';
+    else if (S.turn === 1) left += '<span style="color:var(--ink-dim)">The computer is playing&hellip;</span>';
+    else if (S.phase === 'draw') left += '<span style="color:var(--gold)">Your turn: take the discard or draw from the deck.</span>';
+    else {
+      var bd = bestDiscard(hand, S.takenId);
+      left += '<span style="color:var(--gold)">' + (bd && bd.dw <= 10 ? 'You can knock! Pick a card, then tap Knock.' : 'Pick a card to discard.') + '</span>';
+    }
+    left += ' <span style="color:var(--ink-dim)">&middot; Deadwood ' + arr.dw + '</span>';
+    CG.status(left, '<button class="bigbtn" data-act="scores">Scores</button>');
+    CG.save(this);
+  };
+  GR.sel = null;
+  CG.register(GR);
+  CG.gin = { best: bestMelds, layoff: layoff };
+
+  /* ================= CRAZY EIGHTS ================= */
+  var C8 = {
+    id: 'crazy8', name: 'Crazy Eights', group: 'vs',
+    blurb: 'Match the suit or the number. Eights are wild. Empty your hand first.',
+    emblem: [{ r: 8, s: 'c' }, { r: 8, s: 'h' }, { r: 8, s: 's' }],
+    tools: [],
+    rules:
+      '<p>Be the first to get rid of all your cards.</p><ul>' +
+      '<li>Play a card that matches the top card of the pile by <b>suit</b> or by <b>number</b>.</li>' +
+      '<li><b>Eights are wild.</b> Play one any time and choose the next suit.</li>' +
+      '<li>If you can’t play, tap the deck to draw a card. Keep drawing until you can play.</li>' +
+      '<li>Cards you can play are bright. The others are darker.</li></ul>'
+  };
+  var C8N = { 2: ['You', 'Computer'], 3: ['You', 'West', 'East'], 4: ['You', 'West', 'North', 'East'] };
+  C8.newGame = function (first) {
+    var self = this, pref = CG.store.get('crazy8_n', 2);
+    if (first) return this.startGame(pref);
+    var b = [2, 3, 4].map(function (n) {
+      return { label: (n - 1) + ' computer player' + (n > 2 ? 's' : ''), primary: n === pref, fn: function () { self.startGame(n); } };
+    });
+    if (this.S && !this.S.over) b.push({ label: 'Keep playing' });
+    CG.dialog({ title: 'New game of Crazy Eights', body: '<p>How many computer players?</p>', buttons: b });
+  };
+  C8.startGame = function (n) {
+    CG.store.set('crazy8_n', n);
+    CG.clearTimers();
+    this.S = { n: n, wins: [0, 0, 0, 0].slice(0, n), round: 0, over: false };
+    this.startRound();
+  };
+  C8.startRound = function () {
+    var S = this.S, k = S.n === 2 ? 7 : 5;
+    S.stock = CG.shuffle(CG.deck(1));
+    S.hands = [];
+    for (var p = 0; p < S.n; p++) S.hands.push([]);
+    for (var i = 0; i < k; i++) for (p = 0; p < S.n; p++) S.hands[p].push(S.stock.pop());
+    var c = S.stock.pop();
+    while (c.r === 8) { S.stock.unshift(c); c = S.stock.pop(); }
+    S.pile = [c];
+    S.suit = c.s;
+    S.turn = S.round % S.n;
+    S.round++;
+    S.phase = 'play';
+    S.msg = '';
+    S.over = false;
+    this.sortHand();
+    this.sel = null;
+    this.advance();
+  };
+  C8.sortHand = function () {
+    var o = 'cdsh';
+    this.S.hands[0].sort(function (a, b) {
+      if ((a.r === 8) !== (b.r === 8)) return a.r === 8 ? 1 : -1;
+      return a.s !== b.s ? o.indexOf(a.s) - o.indexOf(b.s) : a.r - b.r;
+    });
+  };
+  C8.legalCard = function (c) {
+    var t = top(this.S.pile);
+    return c.r === 8 || c.s === this.S.suit || c.r === t.r;
+  };
+  C8.legal = function (p) {
+    var self = this;
+    return this.S.hands[p].filter(function (c) { return self.legalCard(c); });
+  };
+  C8.refill = function () {
+    var S = this.S;
+    if (S.stock.length || S.pile.length < 2) return S.stock.length > 0;
+    var t = S.pile.pop();
+    S.stock = CG.shuffle(S.pile);
+    S.pile = [t];
+    CG.toast('The deck ran out, so the pile was shuffled into a new deck.');
+    return true;
+  };
+  C8.advance = function () {
+    var S = this.S, self = this;
+    this.render();
+    if (S.phase !== 'play' && S.phase !== 'suit') return;
+    if (S.turn !== 0 || CG.autoplay) CG.later(function () { if (S === self.S) self.aiTurn(); }, CG.wait(1000));
+  };
+  C8.resume = function () {
+    this.sel = null;
+    if (this.S.phase === 'roundEnd') { this.render(); return this.showEnd(); }
+    if (this.S.phase === 'suit' && this.S.turn === 0 && !CG.autoplay) return this.render();
+    this.advance();
+  };
+  C8.play = function (p, c, suit) {
+    var S = this.S, H = S.hands[p], i = CG.byId(H, c.id);
+    H.splice(i, 1);
+    S.pile.push(c);
+    S.suit = c.s;
+    this.sel = null;
+    var name = C8N[S.n][p];
+    S.msg = (p === 0 ? 'You played ' : name + ' played ') + CG.cardText(c) + '.';
+    if (c.r === 8) {
+      if (p === 0 && !CG.autoplay && !suit) { S.phase = 'suit'; return this.render(); }
+      S.suit = suit;
+      S.msg += ' ' + (p === 0 ? 'You chose ' : name + ' chose ') + CG.SUIT_NAMES[suit] + '.';
+    }
+    if (!H.length) return this.endRound(p);
+    S.turn = (p + 1) % S.n;
+    this.advance();
+  };
+  C8.endRound = function (p) {
+    var S = this.S;
+    S.wins[p]++;
+    S.phase = 'roundEnd';
+    S.winner = p;
+    S.over = true;
+    if (p === 0) CG.addWin(this.id);
+    this.render();
+    var self = this;
+    CG.later(function () { self.showEnd(); }, CG.wait(700));
+  };
+  C8.showEnd = function () {
+    var S = this.S, self = this, names = C8N[S.n], tbl = '<table class="sc"><tr><th>Player</th><th>Rounds won</th></tr>';
+    for (var p = 0; p < S.n; p++) tbl += '<tr><td>' + names[p] + '</td><td>' + S.wins[p] + '</td></tr>';
+    CG.dialog({
+      title: S.winner === 0 ? 'You won the round!' : names[S.winner] + ' won the round',
+      body: tbl + '</table>',
+      buttons: [
+        { label: 'Play another round', primary: true, fn: function () { self.startRound(); } },
+        { label: 'Back to menu', fn: CG.showMenu }
+      ]
+    });
+  };
+  C8.aiTurn = function () {
+    var S = this.S, p = S.turn, self = this;
+    if (S.phase !== 'play') return;
+    var legal = this.legal(p);
+    if (legal.length) {
+      var H = S.hands[p], cnt = { s: 0, h: 0, d: 0, c: 0 };
+      H.forEach(function (c) { if (c.r !== 8) cnt[c.s]++; });
+      var non8 = legal.filter(function (c) { return c.r !== 8; });
+      var pick;
+      if (non8.length) pick = non8.sort(function (a, b) { return cnt[b.s] - cnt[a.s] || b.r - a.r; })[0];
+      else pick = legal[0];
+      var bestSuit = 's';
+      ['s', 'h', 'd', 'c'].forEach(function (s) { if (cnt[s] > cnt[bestSuit]) bestSuit = s; });
+      if (pick.r === 8 && cnt[pick.s] && pick.s === bestSuit) cnt[pick.s]--;
+      return this.play(p, pick, bestSuit);
+    }
+    if (!this.refill()) {
+      S.msg = C8N[S.n][p] + (p === 0 ? ' can’t play and pass.' : ' can’t play and passes.');
+      S.turn = (p + 1) % S.n;
+      S.passes = (S.passes || 0) + 1;
+      if (S.passes > S.n * 2) return this.blocked();
+      return this.advance();
+    }
+    S.passes = 0;
+    S.hands[p].push(S.stock.pop());
+    if (p === 0) this.sortHand();
+    S.msg = C8N[S.n][p] + (p === 0 ? ' draw a card.' : ' draws a card.');
+    this.render();
+    CG.later(function () { if (S === self.S) self.aiTurn(); }, CG.wait(650));
+  };
+  C8.blocked = function () {
+    var S = this.S, best = 0, sizes = S.hands.map(function (h) { return h.length; });
+    for (var p = 1; p < S.n; p++) if (sizes[p] < sizes[best]) best = p;
+    S.msg = 'Nobody can play. The player with the fewest cards wins.';
+    this.endRound(best);
+  };
+  C8.bgTap = function () { if (this.sel != null) { this.sel = null; this.render(); } };
+  C8.act = function (a, d) {
+    var S = this.S;
+    if (S.phase === 'roundEnd') return;
+    if (S.turn !== 0 || CG.autoplay) { CG.toast('Please wait for your turn.'); return; }
+    if (a === 'suit' && S.phase === 'suit') {
+      S.phase = 'play';
+      S.suit = d.s;
+      S.msg = 'You chose ' + CG.SUIT_NAMES[d.s] + '.';
+      if (!S.hands[0].length) return this.endRound(0);
+      S.turn = 1;
+      return this.advance();
+    }
+    if (S.phase !== 'play') return;
+    var legal = this.legal(0);
+    if (a === 'stock') {
+      if (legal.length) { CG.toast('You have a card you can play. Look for the bright cards.'); return; }
+      if (!this.refill()) { CG.toast('No cards left to draw. Tap Pass.'); return; }
+      var c = S.stock.pop();
+      S.hands[0].push(c);
+      this.sortHand();
+      S.msg = 'You drew ' + CG.cardText(c) + '.';
+      S.newId = c.id;
+      return this.render();
+    }
+    if (a === 'pass') {
+      S.msg = 'You passed.';
+      S.turn = 1;
+      S.passes = (S.passes || 0) + 1;
+      if (S.passes > S.n * 2) return this.blocked();
+      return this.advance();
+    }
+    if (a === 'hand') {
+      var id = +d.id, H = S.hands[0], card = H[CG.byId(H, id)];
+      if (!card) return;
+      if (!this.legalCard(card)) {
+        CG.toast('Play a ' + CG.SUIT_ONE[S.suit] + ' ' + CG.suitSvg(S.suit) + ', a ' + CG.RANKS[top(S.pile).r] + ', or an 8.');
+        return;
+      }
+      if (this.sel === id || CG.settings.oneTap) { S.passes = 0; return this.play(0, card); }
+      this.sel = id;
+      this.render();
+    }
+  };
+  C8.render = function () {
+    var S = this.S, W = CG.W(), H = CG.H(), h = '', self = this, names = C8N[S.n];
+    var hand = S.hands[0], n = Math.max(1, hand.length), step = 0.68;
+    var cw1 = Math.min(W / (1 + step * (n - 1)), H * 0.36 / 1.68);
+    var per2 = Math.ceil(n / 2), cw2 = n > 5 ? Math.min(W / (1 + step * (per2 - 1)), H * 0.5 / 2.4) : 0;
+    var two = cw2 > cw1 * 1.1, rowsArr = two ? [hand.slice(0, per2), hand.slice(per2)] : [hand];
+    var cw = Math.floor(Math.min(two ? cw2 : cw1, 150)), ch = cw * 1.4, lift = Math.round(ch * 0.2);
+    var handTop = Math.round(H - ch - (two ? ch * 0.5 : 0));
+    var myTurn = S.turn === 0 && S.phase === 'play';
+    rowsArr.forEach(function (row, r) {
+      var m = row.length, st = m > 1 ? Math.min(cw * 0.8, (W - cw) / (m - 1)) : 0, x0 = (W - (cw + st * (m - 1))) / 2;
+      row.forEach(function (c, k) {
+        var on = self.sel === c.id;
+        h += CG.card(c, x0 + k * st, handTop + r * ch * 0.5 - (on ? lift : 0), {
+          act: 'hand', data: { id: c.id }, w: cw, z: 10 + r * 30 + k, sel: on,
+          dim: myTurn && !self.legalCard(c), cls: S.newId === c.id ? 'new' : ''
+        });
+      });
+    });
+    var bottom = handTop - lift - 10, lblW = Math.round(Math.min(200, W * 0.22)), lblH = 84;
+    var seats = S.n === 2 ? { 1: 'top' } : S.n === 3 ? { 1: 'left', 2: 'right' } : { 1: 'left', 2: 'top', 3: 'right' };
+    var topY = S.n === 3 ? 0 : lblH + 10, midY = Math.round(topY + (bottom - topY) / 2);
+    Object.keys(seats).forEach(function (k) {
+      var p = +k, where = seats[k], x = where === 'left' ? 0 : where === 'right' ? W - lblW : Math.round(W / 2 - lblW / 2);
+      var y = where === 'top' ? 0 : Math.round(midY - lblH / 2);
+      h += '<div class="lbl' + (S.turn === p && S.phase !== 'roundEnd' ? ' turn' : '') + '" style="left:' + x + 'px;top:' + y + 'px;width:' + lblW + 'px"><b>' +
+        names[p] + '</b>Cards: ' + S.hands[p].length + '<br>Wins: ' + S.wins[p] + '</div>';
+    });
+    var room = Math.min(W - 2 * lblW - 40, (bottom - topY) / 1.4 * 2.4);
+    var pw = Math.floor(Math.max(50, Math.min(cw * 1.1, room / 2.4, (bottom - topY - 50) / 1.4))), ph = pw * 1.4;
+    var py = Math.round(midY - ph / 2 - 16), cx = W / 2;
+    var sx = Math.round(cx - pw - 14), px = Math.round(cx + 14);
+    if (S.stock.length || S.pile.length > 1) h += CG.card(null, sx, py, { w: pw, act: 'stock', label: S.stock.length, hint: myTurn && !this.legal(0).length });
+    else h += CG.slot(sx, py, 'Empty', { w: pw });
+    h += CG.card(top(S.pile), px, py, { w: pw });
+    var t = top(S.pile);
+    h += '<div class="note" style="left:' + (px - 40) + 'px;width:' + (pw + 80) + 'px;top:' + Math.round(py + ph + 6) + 'px;font-size:22px">' +
+      (t.r === 8 || S.suit !== t.s ? 'Suit: ' + CG.SUIT_NAMES[S.suit] + ' ' + CG.suitSvg(S.suit) : 'Discard pile') + '</div>';
+    h += '<div class="note" style="left:' + (sx - 20) + 'px;width:' + (pw + 40) + 'px;top:' + Math.round(py + ph + 6) + 'px;font-size:22px">Deck</div>';
+    if (S.phase === 'suit' && S.turn === 0) {
+      var pnl = '<div class="panel" style="left:0;right:0;top:' + Math.max(0, Math.round(midY - 150)) + 'px;z-index:40"><div style="display:inline-block;background:rgba(0,0,0,0.7);border-radius:20px;padding:14px 16px"><h3>Choose the next suit</h3>';
+      ['s', 'h', 'd', 'c'].forEach(function (s) {
+        pnl += '<button class="bigbtn suitbtn s-' + s + '" data-act="suit" data-s="' + s + '">' + CG.suitSvg(s, '') + CG.SUIT_NAMES[s] + '</button>';
+      });
+      h += pnl + '</div></div>';
+    }
+    if (myTurn && !this.legal(0).length && !S.stock.length && S.pile.length < 2)
+      h += '<button class="bigbtn primary abs" style="left:' + Math.round(cx - 70) + 'px;top:' + Math.round(py - 80) + 'px" data-act="pass">Pass</button>';
+    CG.paint(h);
+    var left = S.msg ? S.msg + ' ' : '';
+    if (S.phase === 'roundEnd') left = S.msg;
+    else if (S.phase === 'suit' && S.turn === 0) left = 'Pick the suit the next player must follow.';
+    else if (S.turn !== 0) left += '<span style="color:var(--ink-dim)">' + names[S.turn] + ' is playing&hellip;</span>';
+    else if (this.legal(0).length) left += '<span style="color:var(--gold)">Your turn: play a bright card.</span>';
+    else left += '<span style="color:var(--gold)">No card fits. Tap the deck to draw.</span>';
+    CG.status(left, '');
+    CG.save(this);
+  };
+  C8.sel = null;
+  CG.register(C8);
+
+  /* ================= BLACKJACK ================= */
+  function bjTotal(cards) {
+    var t = 0, aces = 0;
+    cards.forEach(function (c) { if (c.r === 1) { aces++; t += 11; } else t += Math.min(10, c.r); });
+    while (t > 21 && aces) { t -= 10; aces--; }
+    return { t: t, soft: aces > 0 };
+  }
+  function bjVal(c) { return c.r === 1 ? 11 : Math.min(10, c.r); }
+  var BJ = {
+    id: 'blackjack', name: 'Blackjack', group: 'vs',
+    menuMeta: function (S) { return 'Chips: ' + S.chips; },
+    blurb: 'Get closer to 21 than the dealer without going over.',
+    emblem: [{ r: 1, s: 's' }, { r: 13, s: 'h' }],
+    tools: [],
+    rules:
+      '<p>Beat the dealer by getting closer to 21 without going over. You start with 1000 chips. No real money is used.</p><ul>' +
+      '<li>Number cards count their number. Jack, Queen and King count 10. An Ace counts 1 or 11, whichever helps.</li>' +
+      '<li><b>Hit</b> takes another card. <b>Stand</b> keeps what you have.</li>' +
+      '<li><b>Double</b> doubles your bet and gives you exactly one more card.</li>' +
+      '<li><b>Split</b> turns two matching cards into two separate hands.</li>' +
+      '<li>The dealer must take cards until reaching 17 or more.</li>' +
+      '<li>A win pays the same as your bet. Blackjack (Ace plus a 10 or picture card as your first two cards) pays 3 to 2.</li></ul>'
+  };
+  BJ.newGame = function (first) {
+    var self = this;
+    if (first) return this.startGame();
+    CG.confirmNew(this, function () { self.startGame(); }, [{ label: 'Start over with 1000 chips', primary: true, fn: function () { self.startGame(); } }]);
+  };
+  BJ.startGame = function () {
+    CG.clearTimers();
+    this.S = { shoe: CG.shuffle(CG.deck(6)), chips: 1000, bet: 50, hands: [], dealer: [], cur: 0, phase: 'bet', over: false, msg: '' };
+    this.render();
+  };
+  BJ.resume = function () {
+    var S = this.S;
+    if (S.phase === 'dealer') return this.dealerPlay();
+    this.render();
+  };
+  BJ.draw = function () {
+    var S = this.S;
+    if (!S.shoe.length) S.shoe = CG.shuffle(CG.deck(6));
+    return S.shoe.pop();
+  };
+  BJ.deal = function () {
+    var S = this.S;
+    if (S.bet < 10) { CG.toast('Place a bet of at least 10 chips.'); return; }
+    if (S.bet > S.chips) { CG.toast('You don’t have enough chips for that bet.'); return; }
+    if (S.shoe.length < 60) { S.shoe = CG.shuffle(CG.deck(6)); CG.toast('Shuffling a fresh shoe of cards.'); }
+    S.chips -= S.bet;
+    var a = this.draw(), d1 = this.draw(), b = this.draw(), d2 = this.draw();
+    d2.up = false;
+    S.hands = [{ cards: [a, b], bet: S.bet, done: false, res: '' }];
+    S.dealer = [d1, d2];
+    S.cur = 0;
+    S.phase = 'play';
+    S.msg = '';
+    var dealerBJ = bjTotal([d1, { r: d2.r, s: d2.s }]).t === 21, playerBJ = bjTotal([a, b]).t === 21;
+    if (dealerBJ || playerBJ) {
+      S.dealer[1].up = true;
+      var hd = S.hands[0];
+      hd.done = true;
+      if (dealerBJ && playerBJ) { hd.res = 'Push'; S.chips += hd.bet; S.msg = 'You both have Blackjack. Your bet comes back.'; }
+      else if (dealerBJ) { hd.res = 'Lose'; S.msg = 'The dealer has Blackjack.'; }
+      else { hd.res = 'Blackjack!'; S.chips += Math.round(hd.bet * 2.5); hd.bj = true; S.msg = 'Blackjack! You win ' + Math.round(hd.bet * 1.5) + '.'; }
+      S.phase = 'bet';
+    }
+    this.render();
+  };
+  BJ.hand = function () { return this.S.hands[this.S.cur]; };
+  BJ.nextHand = function () {
+    var S = this.S;
+    while (S.cur < S.hands.length && S.hands[S.cur].done) S.cur++;
+    if (S.cur >= S.hands.length) return this.dealerPlay();
+    var hd = S.hands[S.cur];
+    if (hd.cards.length === 1) {
+      hd.cards.push(this.draw());
+      if (hd.splitAces || bjTotal(hd.cards).t === 21) { hd.done = true; return this.nextHand(); }
+    }
+    this.render();
+  };
+  BJ.hit = function () {
+    var hd = this.hand();
+    hd.cards.push(this.draw());
+    var t = bjTotal(hd.cards).t;
+    if (t > 21) { hd.done = true; hd.res = 'Bust'; }
+    else if (t === 21) hd.done = true;
+    if (hd.done) return this.nextHand();
+    this.render();
+  };
+  BJ.dealerPlay = function () {
+    var S = this.S, self = this;
+    S.phase = 'dealer';
+    S.dealer[1].up = true;
+    var live = S.hands.some(function (h) { return h.res !== 'Bust'; });
+    if (live && bjTotal(S.dealer).t < 17) {
+      this.render();
+      CG.later(function () {
+        if (S !== self.S) return;
+        S.dealer.push(self.draw());
+        self.dealerPlay();
+      }, CG.wait(900));
+      return;
+    }
+    var dt = bjTotal(S.dealer).t, net = 0;
+    S.hands.forEach(function (h) {
+      if (h.res === 'Bust') { net -= h.bet; return; }
+      var t = bjTotal(h.cards).t;
+      if (dt > 21 || t > dt) { h.res = 'Win'; S.chips += h.bet * 2; net += h.bet; }
+      else if (t === dt) { h.res = 'Push'; S.chips += h.bet; }
+      else { h.res = 'Lose'; net -= h.bet; }
+    });
+    S.msg = (dt > 21 ? 'The dealer went bust. ' : 'The dealer has ' + dt + '. ') +
+      (net > 0 ? 'You won ' + net + ' chips.' : net < 0 ? 'You lost ' + (-net) + ' chips.' : 'You broke even.');
+    S.phase = 'bet';
+    if (S.bet > S.chips) S.bet = Math.max(10, Math.floor(S.chips / 10) * 10);
+    CG.later(function () { if (S === self.S) self.render(); }, CG.wait(500));
+    this.render();
+  };
+  BJ.act = function (a, d) {
+    var S = this.S;
+    if (S.phase === 'dealer') return;
+    if (S.phase === 'bet') {
+      if (a === 'chip') { S.bet = Math.min(S.chips, S.bet + +d.v); return this.render(); }
+      if (a === 'clearbet') { S.bet = 0; return this.render(); }
+      if (a === 'deal') return this.deal();
+      if (a === 'refill') { S.chips = 1000; S.bet = 50; S.msg = 'You have 1000 chips again.'; return this.render(); }
+      return;
+    }
+    var hd = this.hand();
+    if (!hd) return;
+    if (a === 'hit') return this.hit();
+    if (a === 'stand') { hd.done = true; return this.nextHand(); }
+    if (a === 'double') {
+      if (hd.cards.length !== 2 || S.chips < hd.bet) return;
+      S.chips -= hd.bet;
+      hd.bet *= 2;
+      hd.cards.push(this.draw());
+      hd.done = true;
+      if (bjTotal(hd.cards).t > 21) hd.res = 'Bust';
+      return this.nextHand();
+    }
+    if (a === 'split') {
+      if (!this.canSplit()) return;
+      S.chips -= hd.bet;
+      var c2 = hd.cards.pop(), aces = hd.cards[0].r === 1;
+      var nh = { cards: [c2], bet: hd.bet, done: false, res: '', splitAces: aces };
+      hd.splitAces = aces;
+      S.hands.splice(S.cur + 1, 0, nh);
+      hd.cards.push(this.draw());
+      if (aces || bjTotal(hd.cards).t === 21) { hd.done = true; return this.nextHand(); }
+      return this.render();
+    }
+  };
+  BJ.canSplit = function () {
+    var S = this.S, hd = this.hand();
+    return hd && hd.cards.length === 2 && bjVal(hd.cards[0]) === bjVal(hd.cards[1]) && S.hands.length < 4 && S.chips >= hd.bet && !hd.splitAces;
+  };
+  BJ.render = function () {
+    var S = this.S, W = CG.W(), H = CG.H(), h = '';
+    var nh = Math.max(1, S.hands.length), maxCards = 2;
+    S.hands.forEach(function (x) { maxCards = Math.max(maxCards, x.cards.length); });
+    var dealerCards = Math.max(2, S.dealer.length);
+    var btnH = 86, lblH = 40;
+    var cwH = (H - btnH - 2 * lblH - 30) / 2.8;
+    var cwW1 = W / (1 + 0.42 * (dealerCards - 1)) * 0.9;
+    var cwW2 = (W - 20 * (nh - 1)) / nh / (1 + 0.42 * (maxCards - 1));
+    var cw = Math.floor(Math.max(48, Math.min(150, cwH, cwW1, cwW2))), ch = cw * 1.4, st = cw * 0.42;
+    var dy = lblH, py = lblH * 2 + ch + 20;
+    var dTot = S.dealer.length ? bjTotal(S.dealer.filter(function (c) { return c.up !== false; })) : null;
+    if (S.dealer.length) {
+      var dw = cw + st * (S.dealer.length - 1), dx = (W - dw) / 2;
+      h += '<div class="note" style="left:0;right:0;top:0;font-size:26px">Dealer' + (dTot ? ': ' + dTot.t : '') + '</div>';
+      S.dealer.forEach(function (c, i) { h += CG.card(c, dx + i * st, dy, { w: cw, z: i + 1 }); });
+    } else {
+      h += '<div class="note" style="left:0;right:0;top:' + Math.round(dy + ch / 2 - 20) + 'px;font-size:28px;color:var(--ink-dim)">Place your bet, then tap Deal.</div>';
+    }
+    var slotW = W / nh;
+    S.hands.forEach(function (hd, k) {
+      var t = bjTotal(hd.cards), w = cw + st * (hd.cards.length - 1), x = k * slotW + (slotW - w) / 2;
+      var active = S.phase === 'play' && k === S.cur;
+      var label = (nh > 1 ? 'Hand ' + (k + 1) + ': ' : 'You: ') + t.t + (t.soft && t.t < 21 ? ' (soft)' : '') + ' &middot; Bet ' + hd.bet;
+      var res = hd.res ? ' <span style="color:var(--gold)">' + hd.res + '</span>' : '';
+      h += '<div class="note" style="left:' + Math.round(k * slotW) + 'px;width:' + Math.round(slotW) + 'px;top:' + (py - lblH) + 'px;font-size:' + (nh > 2 ? 20 : 25) + 'px' +
+        (active ? ';color:var(--gold)' : '') + '">' + label + res + '</div>';
+      hd.cards.forEach(function (c, i) { h += CG.card(c, x + i * st, py, { w: cw, z: i + 1, cls: active && i === hd.cards.length - 1 ? 'sel' : '' }); });
+    });
+    var by = H - btnH + 10, bh = '';
+    if (S.phase === 'play') {
+      var hd = this.hand();
+      bh += '<button class="bigbtn primary" data-act="hit">Hit</button><button class="bigbtn primary" data-act="stand">Stand</button>';
+      if (hd && hd.cards.length === 2 && S.chips >= hd.bet) bh += '<button class="bigbtn" data-act="double">Double</button>';
+      if (this.canSplit()) bh += '<button class="bigbtn" data-act="split">Split</button>';
+    } else if (S.phase === 'bet') {
+      if (S.chips < 10) bh += '<button class="bigbtn primary" data-act="refill">Get 1000 new chips</button>';
+      else bh += '<button class="bigbtn" data-act="chip" data-v="10">+10</button><button class="bigbtn" data-act="chip" data-v="50">+50</button>' +
+        '<button class="bigbtn" data-act="chip" data-v="100">+100</button><button class="bigbtn" data-act="clearbet">Clear</button>' +
+        '<button class="bigbtn primary" data-act="deal"' + (S.bet >= 10 ? '' : ' disabled') + '>Deal</button>';
+    }
+    h += '<div class="panel" style="left:0;right:0;top:' + by + 'px">' + bh + '</div>';
+    CG.paint(h);
+    var left = '<span style="color:var(--gold)">Chips: ' + S.chips + '</span> &middot; ' + (S.phase === 'bet' ? 'Bet: ' + S.bet : 'In play') + (S.msg ? ' &middot; ' + S.msg : '');
+    CG.status(left, '');
+    CG.save(this);
+  };
+  CG.register(BJ);
+})();
+
+(function () {
+  function go() { window.CG.init(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
+  else go();
+})();
+</script>
+</body>
+</html>
